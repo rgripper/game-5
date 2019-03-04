@@ -1,28 +1,18 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
+import React, { Component, useEffect } from 'react';
+import * as PIXI from 'pixi.js';
 import './App.css';
 
-class App extends Component {
-  render() {
+function App () {
+
+    useEffect(() => {
+      var app = new PIXI.Application(800, 600, {backgroundColor : 0x1099bb});
+      document.getElementById('app')!.appendChild(app.view);
+    })
+
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.tsx</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+      <div className="App" id="app">
       </div>
     );
-  }
 }
 
 export default App;
