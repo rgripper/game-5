@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "rxjs": "^6.4.0",
+    "ts-key-enum": "^2.0.0"
+  }
+}
