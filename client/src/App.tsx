@@ -7,7 +7,7 @@ import patternSandImage from './assets/PatternSand.jpg';
 import projectileImage from './assets/Projectile.png';
 import { World, ClientCommand, reduceWorldOnTick } from './sim/process';
 import { interval, fromEvent, pipe, merge, Observable } from 'rxjs';
-import { buffer, map, filter, bufferTime, reduce, scan } from 'rxjs/operators';
+import { buffer, map, filter, bufferTime, reduce, scan, distinct, tap } from 'rxjs/operators';
 import { Key } from 'ts-key-enum';
 import { number } from 'prop-types';
 function App () {
@@ -44,8 +44,8 @@ function App () {
 
       function mapKeyboard (event: KeyboardEvent, isOn: boolean) {
         switch(event.key) {
-          case 'w': return { type: "Down", actorId: 1, isOn } as ClientCommand;
-          case 's': return { type: "Up", actorId: 1, isOn } as ClientCommand;
+          case 'w': return { type: "Up", actorId: 1, isOn } as ClientCommand;
+          case 's': return { type: "Down", actorId: 1, isOn } as ClientCommand;
           case 'd': return { type: "Right", actorId: 1, isOn } as ClientCommand;
           case 'a': return { type: "Left", actorId: 1, isOn } as ClientCommand;
           default: return null;
@@ -54,43 +54,65 @@ function App () {
 
       function mapMouse (event: MouseEvent, isOn: boolean) {
         switch(event.button) {
-          case 0: return { type: "Up", actorId: 1, isOn } as ClientCommand;
+          case 0: return { type: "Shoot", actorId: 1, isOn } as ClientCommand;
           default: return null;
         }
       }
 
-      const keyCommandsOn = fromEvent(document, 'keydown').pipe(map(event => mapKeyboard(event as KeyboardEvent, true)));
+      const keyCommandsOn = fromEvent(document, 'keydown').pipe(filter(x => !(x as KeyboardEvent).repeat), map(event => mapKeyboard(event as KeyboardEvent, true)));
       const keyCommandsOff = fromEvent(document, 'keyup').pipe(map(event => mapKeyboard(event as KeyboardEvent, false)));
+
+      const keyCommands = merge(keyCommandsOn, keyCommandsOff).pipe(filter(x => x !== null)) as Observable<ClientCommand>;
+
       const mouseCommandsOn = fromEvent(document, 'mousedown').pipe(map(event => mapMouse(event as MouseEvent, true)));
       const mouseCommandsOff = fromEvent(document, 'mouseup').pipe(map(event => mapMouse(event as MouseEvent, false)));
-      
-      const mergedCommands = merge(keyCommandsOn, keyCommandsOff, mouseCommandsOn, mouseCommandsOff).pipe(filter(x => x !== null)) as Observable<ClientCommand>;
+      const mouseCommands = merge(mouseCommandsOn, mouseCommandsOff).pipe(filter(x => x !== null)) as Observable<ClientCommand>;
+      const mergedCommands = merge(keyCommands, mouseCommands).pipe(tap(x => console.log(x)));
       const commandBatches = mergedCommands.pipe(bufferTime(10));
       
       const worldStream = commandBatches.pipe(scan(reduceWorldOnTick, world));
-      //worldStream.subscribe(x => console.log(x));
+      
+      let currentWorld = world;
+
+      worldStream.subscribe(x => currentWorld = x);
+
       const actorSprites = new Map<number, PIXI.Sprite>();
       world.actors.forEach(actor => {
         const actorSprite = PIXI.Sprite.from(playerImage);
         actorSprites.set(actor.id, actorSprite);
         actorSprite.anchor.set(0.5);
+        actorSprite.scale.x = actorSprite.scale.x / 6;
+        actorSprite.scale.y = actorSprite.scale.y / 6;
         app.stage.addChild(actorSprite);
       });
 
-      worldStream.subscribe(function(world) {
-        
-        // just for fun, let's rotate mr rabbit a little
-        // delta is 1 if running at 100% performance
-        // creates frame-independent transformation
+      app.ticker.add(x => {
+        const world = currentWorld;
+
         world.actors.forEach(actor => {
-          console.log('actor', actor.id, actor.location.x, actor.location.y);
+          //console.log('actor', actor.id, actor.location.x, actor.location.y);
           const actorSprite = actorSprites.get(actor.id)!;
           actorSprite.position.x = actor.location.x;
           actorSprite.position.y = actor.location.y; 
           //actorSprite.position.set(actor.location.x, actor.location.y);
         })
+      });
+      
+
+      //worldStream.subscribe(function(world) {
+        // console.log(world);
+        // // just for fun, let's rotate mr rabbit a little
+        // // delta is 1 if running at 100% performance
+        // // creates frame-independent transformation
+        // world.actors.forEach(actor => {
+        //   console.log('actor', actor.id, actor.location.x, actor.location.y);
+        //   const actorSprite = actorSprites.get(actor.id)!;
+        //   actorSprite.position.x = actor.location.x;
+        //   actorSprite.position.y = actor.location.y; 
+        //   //actorSprite.position.set(actor.location.x, actor.location.y);
+        // })
         
-      })
+      //})
     })
 
     return (

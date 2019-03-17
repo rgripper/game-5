@@ -88,28 +88,30 @@ export type World = {
 
 export function reduceWorldOnTick (world: World, clientCommands: ClientCommand[]): World {
   const activities = clientCommands.reduce(reduceActivitiesByCommand, world.activities);
-  return activities.reduce(reduceWorldByActivity, world);
+  
+  return activities.reduce(reduceWorldByActivity, { ...world, activities });
 }
 
-function reduceActivitiesByCommand (activities: Activity[], clientCommand: ClientCommand): Activity[] {
-  if (clientCommand.isOn) {
-    return [{ type: clientCommand.type, actorId: clientCommand.actorId }, ...activities]
+function reduceActivitiesByCommand (activities: Activity[], { type, actorId, isOn }: ClientCommand): Activity[] {
+  if (isOn) {
+    return [{ type, actorId }, ...activities]
   }
   else {
-    return activities.filter(x => x.type === clientCommand.type && x.actorId === clientCommand.actorId);
+    return activities.filter(x => x.type !== type || x.actorId !== actorId); // handle a case when both directions are pressed
   }
 }
 
 function reduceWorldByActivity (world: World, activity: Activity): World {
+  
   // TODO: make World immutable
     const actor = world.actors.find(x => x.id === activity.actorId)!; // TODO: remove !
     switch(activity.type) {
       case "Up": {
-        actor.location.y += 5;
+        actor.location.y -= 5;
         return world;
       }
       case "Down": {
-        actor.location.y -= 5;
+        actor.location.y += 5;
         return world;
       }
       case "Right": {
