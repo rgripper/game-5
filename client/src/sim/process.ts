@@ -58,20 +58,21 @@ type WorldDestruction = {
   target: World;
 }
 
-type Activity = {
-  actorId: Actor['id'];
-  type: ClientCommand['type'];
+type Activity = ({
+  type: "Horizontal" | "Vertical";
+  isNegative: boolean;
+} | {
+  type: "Shoot";
+})
+& {
+  actorId: Actor["id"];
 }
   //| ActorCreation | ActorMovement | ActorDestruction
   // | DamageApplication
   // | ProjectileCreation | ProjectileMovement | ProjectileDestruction
   // | WorldCreation | WorldCompletion | WorldDestruction
 
-export type ClientCommand = {
-  type: "Left" | "Right" | "Up" | "Down" | "Shoot";
-  isOn: boolean;
-  actorId: Actor["id"];
-}
+export type ClientCommand = Activity & { isOn: boolean; }
 
 type Location = {
   x: number;
@@ -92,12 +93,13 @@ export function reduceWorldOnTick (world: World, clientCommands: ClientCommand[]
   return activities.reduce(reduceWorldByActivity, { ...world, activities });
 }
 
-function reduceActivitiesByCommand (activities: Activity[], { type, actorId, isOn }: ClientCommand): Activity[] {
+function reduceActivitiesByCommand (activities: Activity[], { isOn, ...otherProps }: ClientCommand): Activity[] {
+  const filteredActivities = activities.filter(x => x.type !== otherProps.type || x.actorId !== otherProps.actorId);
   if (isOn) {
-    return [{ type, actorId }, ...activities]
+    return [otherProps, ...filteredActivities];
   }
   else {
-    return activities.filter(x => x.type !== type || x.actorId !== actorId); // handle a case when both directions are pressed
+    return filteredActivities;
   }
 }
 
@@ -106,22 +108,15 @@ function reduceWorldByActivity (world: World, activity: Activity): World {
   // TODO: make World immutable
     const actor = world.actors.find(x => x.id === activity.actorId)!; // TODO: remove !
     switch(activity.type) {
-      case "Up": {
-        actor.location.y -= 5;
+      case "Horizontal": {
+        actor.location.x += 2 * (activity.isNegative ? 1 : -1);
         return world;
       }
-      case "Down": {
-        actor.location.y += 5;
+      case "Vertical": {
+        actor.location.y += 2 * (activity.isNegative ? 1 : -1);
         return world;
       }
-      case "Right": {
-        actor.location.x += 5;
-        return world;
-      }
-      case "Left": {
-        actor.location.x -= 5;
-        return world;
-      }
+      default: return world;
     }
-    return world;
+    
 }
