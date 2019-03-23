@@ -5,7 +5,7 @@ const actorSprites = new Map<number, PIXI.Sprite>();
 
 export function loadWorld (world: World, app: PIXI.Application) {
   
-  world.actors.forEach(actor => {
+  Object.values(world.actors).forEach(actor => {
     const actorSprite = PIXI.Sprite.from(playerImage);
     actorSprites.set(actor.id, actorSprite);
     actorSprite.anchor.set(0.5);
@@ -17,7 +17,7 @@ export function loadWorld (world: World, app: PIXI.Application) {
 }
 
 export function renderWorld(world: World, app: PIXI.Application) {
-  world.actors.forEach(actor => {
+  Object.values(world.actors).forEach(actor => {
     //console.log('actor', actor.id, actor.location.x, actor.location.y);
     const actorSprite = actorSprites.get(actor.id)!;
     actorSprite.position.x = actor.location.x;

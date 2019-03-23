@@ -39,7 +39,14 @@ function App () {
 
 
       app.stage.addChild(projectile);
-      const initialWorld: World = { activities: [], actors: [{ location: { x: 25, y: 25 }, id: 1 }, { location: { x: 125, y: 125 }, id: 2 }], projectiles: [] } 
+      const initialWorld: World = { 
+        activities: {}, 
+        actors: { 
+          "1": { location: { x: 25, y: 25 }, id: 1 }, 
+          "2": { location: { x: 125, y: 125 }, id: 2 } 
+        }, 
+        projectiles: {} 
+      } 
 
       const commandBatches = convertEventsToCommands(document).pipe(bufferTime(10));
       

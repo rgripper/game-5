@@ -1,9 +1,9 @@
-type Actor = {
+type Actor = Entity & {
   id: number;
   location: Location;
 }
 
-type Projectile = {
+type Projectile = Entity & {
   id: number;
   location: Location;
 }
@@ -58,7 +58,9 @@ type WorldDestruction = {
   target: World;
 }
 
-type Activity = ({
+type Entity = { id: number }
+
+type ActivityBase = ({
   type: "Horizontal" | "Vertical";
   isNegative: boolean;
 } | {
@@ -67,46 +69,63 @@ type Activity = ({
 & {
   actorId: Actor["id"];
 }
+
+type Activity = Entity & ActivityBase
+
   //| ActorCreation | ActorMovement | ActorDestruction
   // | DamageApplication
   // | ProjectileCreation | ProjectileMovement | ProjectileDestruction
   // | WorldCreation | WorldCompletion | WorldDestruction
 
-export type ClientCommand = Activity & { isOn: boolean; }
+export type ClientCommand = ActivityBase & { isOn: boolean; }
 
 type Location = {
   x: number;
   y: number;
 }
 
+type ObjectMap<T extends { id: number }> = {[key: string]: T}
+
 export type World = {
-  activities: Activity[];
-
-  actors: Actor[];
-
-  projectiles: Projectile[];
+  activities: ObjectMap<Activity>;
+  actors: ObjectMap<Actor>;
+  projectiles: ObjectMap<Projectile>;
 }
 
 export function reduceWorldOnTick (world: World, clientCommands: ClientCommand[]): World {
   const activities = clientCommands.reduce(reduceActivitiesByCommand, world.activities);
   
-  return activities.reduce(reduceWorldByActivity, { ...world, activities });
+  return Object.values(activities).reduce(reduceWorldByActivity, { ...world, activities });
 }
 
-function reduceActivitiesByCommand (activities: Activity[], { isOn, ...otherProps }: ClientCommand): Activity[] {
-  const filteredActivities = activities.filter(x => x.type !== otherProps.type || x.actorId !== otherProps.actorId);
+let id = 100; // TODO: everything should acquire id from here
+
+function getNewActivityId () {
+  return id++;
+}
+
+function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { isOn, ...otherProps }: ClientCommand): ObjectMap<Activity> {
+  let currentActivity = Object.values(activities).find(x => x.type === otherProps.type && x.actorId === otherProps.actorId);
   if (isOn) {
-    return [otherProps, ...filteredActivities];
+    if (!currentActivity) {
+      currentActivity = { id: getNewActivityId(), ...otherProps };
+    }
+
+    return { ...activities, [currentActivity.id]: { ...currentActivity, ...otherProps } };
   }
   else {
-    return filteredActivities;
+    const copy = { ...activities };
+    if (currentActivity) {
+      delete copy[currentActivity.id]
+    }
+    return copy;
   }
 }
 
 function reduceWorldByActivity (world: World, activity: Activity): World {
   
   // TODO: make World immutable
-    const actor = world.actors.find(x => x.id === activity.actorId)!; // TODO: remove !
+    const actor = world.actors[activity.actorId];
     switch(activity.type) {
       case "Horizontal": {
         actor.location.x += 2 * (activity.isNegative ? 1 : -1);
