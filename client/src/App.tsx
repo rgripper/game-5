@@ -5,10 +5,12 @@ import mosterImage from './assets/Monster.png';
 import playerImage from './assets/Player.png';
 import patternSandImage from './assets/PatternSand.jpg';
 import projectileImage from './assets/Projectile.png';
-import { World, reduceWorldOnTick } from './sim/process';
-import { bufferTime, scan } from 'rxjs/operators';
+import {reduceWorldOnTick, TickOutcome } from './sim/process';
+import { bufferTime, scan, buffer } from 'rxjs/operators';
 import { convertEventsToCommands } from './clientCommands/sourcing';
-import { loadWorld, renderWorld } from './sim/rendering';
+import { renderDiffs, renderWorld as renderInitialWorld } from './sim/rendering';
+import { Observable, Subscriber } from 'rxjs';
+
 function App () {
 
     useEffect(() => {
@@ -39,26 +41,37 @@ function App () {
 
 
       app.stage.addChild(projectile);
-      const initialWorld: World = { 
-        activities: {}, 
-        actors: { 
-          "1": { location: { x: 25, y: 25 }, id: 1 }, 
-          "2": { location: { x: 125, y: 125 }, id: 2 } 
-        }, 
-        projectiles: {} 
+
+      const renderInApp = (outcomes: TickOutcome[]) => renderDiffs(outcomes.map(x => x.diffs).flat(), app);
+
+      const playerId = 1;
+
+      const initialOutcome: TickOutcome = {
+        diffs: [],
+        world: {
+          players: {
+            [playerId]: { id: playerId }
+          },
+          activities: {}, 
+          entities: {
+            "1": { location: { x: 25, y: 25 }, id: 1, type: "Actor" }
+          }, 
+        }
       } 
 
-      const commandBatches = convertEventsToCommands(document).pipe(bufferTime(10));
+      renderInitialWorld(initialOutcome.world, app);
+
+      const commandBatches = convertEventsToCommands(document, playerId).pipe(bufferTime(10));
       
-      const worldStream = commandBatches.pipe(scan(reduceWorldOnTick, initialWorld));
-      
-      let currentWorld = initialWorld;
+      const simTickOutcomes$ = commandBatches.pipe(scan(reduceWorldOnTick, initialOutcome));
 
-      worldStream.subscribe(x => currentWorld = x);
+      const frameStream: Observable<number> = Observable.create((subscriber: Subscriber<number>) => {
+        app.ticker.add(x => subscriber.next(x))
+      });
 
-      loadWorld(currentWorld, app); // TEMP until it's totally dynamic
+      const worldRenders$ = simTickOutcomes$.pipe(buffer(frameStream));
 
-      app.ticker.add(x => renderWorld(currentWorld, app)); // we can convert it to Observable and connect to world stream
+      worldRenders$.subscribe(renderInApp);
     })
 
     return (
