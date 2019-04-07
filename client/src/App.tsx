@@ -5,44 +5,18 @@ import mosterImage from './assets/Monster.png';
 import playerImage from './assets/Player.png';
 import patternSandImage from './assets/PatternSand.jpg';
 import projectileImage from './assets/Projectile.png';
-import {reduceWorldOnTick, TickOutcome } from './sim/process';
-import { bufferTime, scan, buffer } from 'rxjs/operators';
+import {reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/process';
+import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { convertEventsToCommands } from './clientCommands/sourcing';
 import { renderDiffs, renderWorld as renderInitialWorld } from './sim/rendering';
-import { Observable, Subscriber } from 'rxjs';
+import { Observable, Subscriber, interval } from 'rxjs';
+import { Diff } from './sim/Diff';
 
 function App () {
 
     useEffect(() => {
       const app = new PIXI.Application(800, 600, {backgroundColor : 0x1099bb});
       document.getElementById('app')!.appendChild(app.view);
-      const sandTexture = PIXI.extras.TilingSprite.from(patternSandImage, 800, 600);
-      const projectile = PIXI.Sprite.from(projectileImage);
-      const monster = PIXI.Sprite.from(mosterImage);
-      monster.scale.x = monster.scale.x / 6;
-      monster.scale.y = monster.scale.y / 6;
-
-      const player = PIXI.Sprite.from(playerImage);
-      player.scale.x = player.scale.x / 6;
-      player.scale.y = player.scale.y / 6;
-
-      // move the sprite to the center of the screen
-      monster.x = app.screen.width / 2;
-      monster.y = app.screen.height / 2;
-
-      projectile.x = app.screen.width / 3;
-      projectile.y = app.screen.height / 3;
-
-
-      app.stage.addChild(sandTexture);
-
-      monster.anchor.set(0.5);
-      app.stage.addChild(monster);
-
-
-      app.stage.addChild(projectile);
-
-      const renderInApp = (outcomes: TickOutcome[]) => renderDiffs(outcomes.map(x => x.diffs).flat(), app);
 
       const playerId = 1;
 
@@ -61,17 +35,27 @@ function App () {
 
       renderInitialWorld(initialOutcome.world, app);
 
-      const commandBatches = convertEventsToCommands(document, playerId).pipe(bufferTime(10));
-      
-      const simTickOutcomes$ = commandBatches.pipe(scan(reduceWorldOnTick, initialOutcome));
+      const commands$ = convertEventsToCommands(document, playerId);
 
-      const frameStream: Observable<number> = Observable.create((subscriber: Subscriber<number>) => {
+      const frames$: Observable<number> = Observable.create((subscriber: Subscriber<number>) => {
         app.ticker.add(x => subscriber.next(x))
       });
 
-      const worldRenders$ = simTickOutcomes$.pipe(buffer(frameStream));
-
-      worldRenders$.subscribe(renderInApp);
+      const batchCommandsPerTick = bufferTime<ClientCommand>(10);
+      const runTickPerCommandBatch = scan(reduceWorldOnTick, initialOutcome);
+      const batchTicksPerFrame = buffer<TickOutcome>(frames$);
+      const collectDiffsFromTicks = map<TickOutcome[], Diff[]>(outcomes => outcomes.map(x => x.diffs).flat());
+      const processDiffs = tap<Diff[]>(diffs => renderDiffs(diffs, app));
+      
+      const subscription = commands$.pipe(
+        batchCommandsPerTick, 
+        runTickPerCommandBatch, 
+        batchTicksPerFrame, 
+        collectDiffsFromTicks, 
+        processDiffs
+      ).subscribe();
+      
+      return () => subscription.unsubscribe();
     })
 
     return (

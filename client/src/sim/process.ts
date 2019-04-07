@@ -173,21 +173,19 @@ function applyDiffs (world: World, diffs: Diff[]): World {
 
 function produceDiffsByActivity (world: World, activity: Activity): Diff[] {
   try {
-
-
-  const actor = world.entities[activity.actorId];
-  switch(activity.type) {
-    case "Horizontal": {
-      const updatedActor = { ...actor, location: { ...actor.location, x: actor.location.x + 2 * (activity.isNegative ? 1 : -1) } };
-      return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
+    const actor = world.entities[activity.actorId];
+    switch(activity.type) {
+      case "Horizontal": {
+        const updatedActor = { ...actor, location: { ...actor.location, x: actor.location.x + 2 * (activity.isNegative ? 1 : -1) } };
+        return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
+      }
+      case "Vertical": {
+        const updatedActor = { ...actor, location: { ...actor.location, y: actor.location.y + 2 * (activity.isNegative ? 1 : -1) } };
+        return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
+      }
+      default: return [];
     }
-    case "Vertical": {
-      const updatedActor = { ...actor, location: { ...actor.location, y: actor.location.y + 2 * (activity.isNegative ? 1 : -1) } };
-      return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
-    }
-    default: return [];
   }
-}
   finally{
     console.log(activity.actorId, world.entities)
   }
