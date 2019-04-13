@@ -48,10 +48,10 @@ function App () {
       const processDiffs = tap<Diff[]>(diffs => renderDiffs(diffs, app));
       
       const subscription = commands$.pipe(
-        batchCommandsPerTick, 
-        runTickPerCommandBatch, 
-        batchTicksPerFrame, 
-        collectDiffsFromTicks, 
+        batchCommandsPerTick,
+        runTickPerCommandBatch,
+        batchTicksPerFrame,
+        collectDiffsFromTicks,
         processDiffs
       ).subscribe();
       

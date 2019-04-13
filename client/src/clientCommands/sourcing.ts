@@ -5,10 +5,10 @@ import { FromEventTarget } from "rxjs/internal/observable/fromEvent";
 
 function mapKeyboard(event: KeyboardEvent, isOn: boolean, playerId: number): ClientCommand | undefined {
   switch (event.key) {
-    case 'w': return { type: "CharacterCommand", activity: { type: "Vertical", playerId,  actorId: 1, isOn, isNegative: false } };
-    case 's': return { type: "CharacterCommand", activity: { type: "Vertical", playerId, actorId: 1, isOn, isNegative: true } };
-    case 'd': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, actorId: 1, isOn, isNegative: true } };
-    case 'a': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, actorId: 1, isOn, isNegative: false } };
+    case 'w': return { type: "CharacterCommand", activity: { type: "Vertical", playerId,  actorId: 1, isOn, isNegative: true } };
+    case 's': return { type: "CharacterCommand", activity: { type: "Vertical", playerId, actorId: 1, isOn, isNegative: false } };
+    case 'd': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, actorId: 1, isOn, isNegative: false } };
+    case 'a': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, actorId: 1, isOn, isNegative: true } };
     default: return undefined;
   }
 }

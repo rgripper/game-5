@@ -1,4 +1,7 @@
 import { Diff } from "./Diff";
+import { actorBehaviour } from "./behaviours/actorBehaviour";
+import { projectileBehaviour } from "./behaviours/projectileBehaviour";
+import { Location } from './Physics';
 
 export type Actor = {
   id: number;
@@ -71,7 +74,16 @@ type CharacterActivity = ({
   actorId: Actor["id"];
 }
 
-export type Activity = { id: number } & CharacterActivity
+type ProjectileActivity = {
+  type: "Projectile";
+  angle: number;
+  velocity: number;
+}
+& {
+  projectileId: Projectile["id"];
+}
+
+export type Activity = { id: number } & (CharacterActivity | ProjectileActivity)
 
 export type CharacterCommand = {
   type: "CharacterCommand";
@@ -85,11 +97,6 @@ export type CharacterCommand = {
 
 //type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 export type ClientCommand = CharacterCommand
-
-type Location = {
-  x: number;
-  y: number;
-}
 
 type Player = {
   id: number;
@@ -113,9 +120,9 @@ export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: Clien
   const seed: TickOutcome = { world: worldWithUpdatedActivities, diffs: [] };
   
   return Object.values(activities).reduce(({ world, diffs }, activity) => {
-    const nextDiffs = produceDiffsByActivity(world, activity);
+    const nextDiffs = performActivity(world, activity);
     return {
-      world: applyDiffs(world, nextDiffs),
+      world: nextDiffs.reduce(applyDiff, world),
       diffs: [...diffs, ...nextDiffs]
     }
   }, seed);
@@ -144,49 +151,44 @@ function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity:
   }
 }
 
-function applyDiffs (world: World, diffs: Diff[]): World {
-  // MAYBE: make immutable?
-  diffs.forEach(diff => {
-    switch (diff.type) {
-      case "Upsert": {
-        if (diff.targetType == 'Entity') {
-          world.entities[diff.target.id] = diff.target;
-        }
-        else {
-          world.activities[diff.target.id] = diff.target;
-        }
-        return;
+// TODO: maybe make immutable
+function applyDiff (world: World, diff: Diff): World {
+  switch (diff.type) {
+    case "Upsert": {
+      if (diff.targetType == 'Entity') {
+        world.entities[diff.target.id] = diff.target;
       }
-      case "Delete": {
-        if (diff.targetType == 'Entity') {
-          delete world.entities[diff.target.id];
-        }
-        else {
-          delete world.activities[diff.target.id];
-        }
-        return;
+      else {
+        world.activities[diff.target.id] = diff.target;
       }
+      break;
     }
-  });
+    case "Delete": {
+      if (diff.targetType == 'Entity') {
+        delete world.entities[diff.target.id];
+      }
+      else {
+        delete world.activities[diff.target.id];
+      }
+      break;
+    }
+  }
+
   return world;
 }
 
-function produceDiffsByActivity (world: World, activity: Activity): Diff[] {
+function performActivity (world: World, activity: Activity): Diff[] {
   try {
-    const actor = world.entities[activity.actorId];
-    switch(activity.type) {
-      case "Horizontal": {
-        const updatedActor = { ...actor, location: { ...actor.location, x: actor.location.x + 2 * (activity.isNegative ? 1 : -1) } };
-        return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
-      }
-      case "Vertical": {
-        const updatedActor = { ...actor, location: { ...actor.location, y: actor.location.y + 2 * (activity.isNegative ? 1 : -1) } };
-        return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
-      }
-      default: return [];
+    if (activity.type === "Projectile") {
+      const projectile = world.entities[activity.projectileId] as Projectile; // TODO: remove type casting
+      return projectileBehaviour.reduce(projectile, activity);
+    }
+    else {
+      const actor = world.entities[activity.actorId] as Actor; // TODO: remove type casting
+      return actorBehaviour.reduce(actor, activity);
     }
   }
   finally{
-    console.log(activity.actorId, world.entities)
+    console.log(activity, world.entities)
   }
 }
