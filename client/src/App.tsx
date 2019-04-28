@@ -28,7 +28,7 @@ function App () {
           },
           activities: {}, 
           entities: {
-            "1": { location: { x: 25, y: 25 }, id: 1, type: "Actor" }
+            "1": { location: { x: 25, y: 25 }, size: { width: 28, height: 28 }, id: 1, type: "Actor" }
           }, 
         }
       } 

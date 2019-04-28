@@ -1,6 +1,13 @@
-import { Actor, Activity, Entity } from "../process";
+import { Actor, Activity, Entity, Projectile } from "../process";
 import { EntityBehaviour } from "./EntityBehaviour";
 import { Diff } from "../Diff";
+
+// TODO: refactor
+let projectile = 10;
+
+function generateProjectileId () {
+  return projectile++;
+}
 
 export const actorBehaviour: EntityBehaviour<Actor> = {
   reduce(actor: Actor, activity: Activity): Diff[] {
@@ -12,6 +19,14 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
       case "Vertical": {
         const updatedActor = { ...actor, location: { ...actor.location, y: actor.location.y + 2 * (activity.isNegative ? -1 : 1) } };
         return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
+      }
+      case "Shoot": {
+        const projectile: Projectile = { 
+          id: generateProjectileId(), 
+          location: { ...actor.location, x: actor.location.x + actor.size.width }, // TODO: generate shooting point
+          type: "Projectile" 
+        };
+        return [{ target: projectile, targetType: "Entity", type: "Upsert" }];
       }
       default: return [];
     }

@@ -1,8 +1,10 @@
 import { Diff } from "./Diff";
 import characterImage from '../assets/Player.png';
+import projectileImage from '../assets/Projectile.png';
 import { World } from "./process";
 
 const actorSprites = new Map<number, PIXI.Sprite>();
+const projectileSprites = new Map<number, PIXI.Sprite>();
 
 function createCharacter (actorId: number, app: PIXI.Application): PIXI.Sprite {
   const character = PIXI.Sprite.from(characterImage);
@@ -11,6 +13,15 @@ function createCharacter (actorId: number, app: PIXI.Application): PIXI.Sprite {
   actorSprites.set(actorId, character);
   app.stage.addChild(character);
   return character;
+}
+
+function createProjectile (projectileId: number, app: PIXI.Application): PIXI.Sprite {
+  const projectileSprite = PIXI.Sprite.from(projectileImage);
+  projectileSprite.scale.x = projectileSprite.scale.x / 6;
+  projectileSprite.scale.y = projectileSprite.scale.y / 6;
+  actorSprites.set(projectileId, projectileSprite);
+  app.stage.addChild(projectileSprite);
+  return projectileSprite;
 }
 
 export function renderWorld(world: World, app: PIXI.Application) {
@@ -33,8 +44,10 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
           character.x = diff.target.location.x;
           character.y = diff.target.location.y;
         }
-        else {
-          // TODO
+        else if(diff.target.type === "Projectile") {
+          const projectileSprite = projectileSprites.get(diff.target.id) || createProjectile(diff.target.id, app);
+          projectileSprite.x = diff.target.location.x;
+          projectileSprite.y = diff.target.location.y;
         }
         return;
       }
@@ -45,7 +58,9 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
           actorSprites.delete(diff.target.id);
         }
         else {
-          // TODO
+          const projectileSprite = projectileSprites.get(diff.target.id)!;
+          app.stage.removeChild(projectileSprite);
+          projectileSprites.delete(diff.target.id);
         }
         return;
       }

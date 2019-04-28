@@ -3,10 +3,13 @@ import { actorBehaviour } from "./behaviours/actorBehaviour";
 import { projectileBehaviour } from "./behaviours/projectileBehaviour";
 import { Location } from './Physics';
 
+export type Size = { width: number; height: number; }
+
 export type Actor = {
   id: number;
   type: "Actor"
   location: Location;
+  size: Size
 }
 
 export type Projectile = {
