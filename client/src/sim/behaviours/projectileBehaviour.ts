@@ -9,7 +9,7 @@ export const projectileBehaviour: EntityBehaviour<Projectile> = {
       case "Projectile": {
         const updatedProjectile = { 
           ...projectile, 
-          location: move(projectile.location, activity.velocity, activity.angle)
+          location: move(projectile.location, activity.velocity, activity.rotation)
         };
         return [{ target: updatedProjectile, targetType: "Entity", type: "Upsert" }];
       }

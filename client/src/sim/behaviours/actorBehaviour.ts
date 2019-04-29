@@ -1,6 +1,7 @@
-import { Actor, Activity, Entity, Projectile } from "../process";
+import { Actor, Activity, Entity, Projectile, ProjectileActivity } from "../process";
 import { EntityBehaviour } from "./EntityBehaviour";
 import { Diff } from "../Diff";
+import { getRadians } from "../Physics";
 
 // TODO: refactor
 let projectile = 10;
@@ -24,9 +25,19 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
         const projectile: Projectile = { 
           id: generateProjectileId(), 
           location: { ...actor.location, x: actor.location.x + actor.size.width }, // TODO: generate shooting point
+          rotation: getRadians(270),
           type: "Projectile" 
         };
-        return [{ target: projectile, targetType: "Entity", type: "Upsert" }];
+
+        const projectileActivity: Activity = { 
+          id: generateProjectileId(),
+          rotation: projectile.rotation, velocity: 2, type: "Projectile", projectileId: projectile.id, 
+          // TODO: use generic id generator?
+        }
+        return [
+          { target: projectile, targetType: "Entity", type: "Upsert" },
+          { target: projectileActivity, targetType: "Activity", type: "Upsert" }
+        ];
       }
       default: return [];
     }

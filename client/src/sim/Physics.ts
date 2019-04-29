@@ -3,9 +3,14 @@ export type Location = {
   y: number; // from top to bottom
 }
 
-export function move(location: Location, velocity: number, angle: number): Location {
+export function getRadians(angle: number): number {
+  return (angle * Math.PI)/ 180;
+}
+
+export function move(location: Location, velocity: number, rotation: number): Location {
+  console.log("move", velocity * Math.sin(rotation));
   return {
-    x: location.x + velocity * Math.sin(angle),
-    y: location.y + velocity * Math.cos(angle)
+    x: location.x + velocity * Math.sin(rotation),
+    y: location.y + velocity * Math.cos(rotation)
   }
 }

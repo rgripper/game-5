@@ -16,6 +16,7 @@ export type Projectile = {
   id: number;
   type: "Projectile"
   location: Location;
+  rotation: number;
 }
 
 export type Entity = Actor | Projectile
@@ -77,9 +78,9 @@ type CharacterActivity = ({
   actorId: Actor["id"];
 }
 
-type ProjectileActivity = {
+export type ProjectileActivity = {
   type: "Projectile";
-  angle: number;
+  rotation: number;
   velocity: number;
 }
 & {

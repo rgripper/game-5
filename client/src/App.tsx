@@ -9,7 +9,7 @@ import {reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/process';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { convertEventsToCommands } from './clientCommands/sourcing';
 import { renderDiffs, renderWorld as renderInitialWorld } from './sim/rendering';
-import { Observable, Subscriber, interval } from 'rxjs';
+import { Observable, Subscriber } from 'rxjs';
 import { Diff } from './sim/Diff';
 
 function App () {
