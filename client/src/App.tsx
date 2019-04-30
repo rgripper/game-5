@@ -1,16 +1,13 @@
 import React, { useEffect } from 'react';
 import * as PIXI from 'pixi.js';
 import './App.css';
-import mosterImage from './assets/Monster.png';
-import playerImage from './assets/Player.png';
-import patternSandImage from './assets/PatternSand.jpg';
-import projectileImage from './assets/Projectile.png';
 import {reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/process';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { convertEventsToCommands } from './clientCommands/sourcing';
 import { renderDiffs, renderWorld as renderInitialWorld } from './sim/rendering';
 import { Observable, Subscriber } from 'rxjs';
 import { Diff } from './sim/Diff';
+import { getRadians } from './sim/Physics';
 
 function App () {
 
@@ -28,7 +25,7 @@ function App () {
           },
           activities: {}, 
           entities: {
-            "1": { location: { x: 25, y: 25 }, size: { width: 28, height: 28 }, id: 1, type: "Actor" }
+            "1": { location: { x: 25, y: 25 }, size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1, type: "Actor" }
           }, 
         }
       } 

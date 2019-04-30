@@ -6,12 +6,20 @@ export type Diff = EntityDiff | ActivityDiff
 
 export type EntityDiff = {
   targetType: 'Entity';
+} & ({
   target: Entity;
-  type: DiffType;
-}
+  type: "Upsert";
+} | {
+  targetId: Entity["id"];
+  type: "Delete";
+})
 
 export type ActivityDiff = {
   targetType: 'Activity';
+} & ({
   target: Activity;
-  type: DiffType;
-}
+  type: "Upsert";
+} | {
+  targetId: Activity["id"];
+  type: "Delete";
+})

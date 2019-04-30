@@ -18,7 +18,7 @@ export const projectileBehaviour: EntityBehaviour<Projectile> = {
   },
   
   affect(projectile: Projectile, otherEntity: Entity): Diff[] {
-    return [{ type: "Delete", targetType: "Entity", target: projectile }]; // TODO: damage
+    return [{ type: "Delete", targetType: "Entity", targetId: projectile.id }]; // TODO: damage
   }
 
   // TODO: area of effect - damage

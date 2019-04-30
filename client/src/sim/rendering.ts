@@ -1,33 +1,33 @@
 import { Diff } from "./Diff";
-import characterImage from '../assets/Player.png';
+import playerImage from '../assets/Player.png';
 import projectileImage from '../assets/Projectile.png';
-import { World } from "./process";
+import { World, Entity } from "./process";
 
 const sprites = new Map<number, PIXI.Sprite>();
 
-function createCharacter (actorId: number, app: PIXI.Application): PIXI.Sprite {
-  const character = PIXI.Sprite.from(characterImage);
-  character.scale.x = character.scale.x / 6;
-  character.scale.y = character.scale.y / 6;
-  sprites.set(actorId, character);
-  app.stage.addChild(character);
-  return character;
+function getImageByEntityType(entityType: Entity["type"]): string {
+  switch(entityType) {
+    case "Actor": return playerImage;
+    case "Projectile": return projectileImage;
+  }
 }
 
-function createProjectile (projectileId: number, app: PIXI.Application): PIXI.Sprite {
-  const projectileSprite = PIXI.Sprite.from(projectileImage);
-  projectileSprite.scale.x = projectileSprite.scale.x;
-  projectileSprite.scale.y = projectileSprite.scale.y;
-  sprites.set(projectileId, projectileSprite);
-  app.stage.addChild(projectileSprite);
-  return projectileSprite;
+function createSprite (entityId: number, app: PIXI.Application, image: string): PIXI.Sprite {
+  const sprite = PIXI.Sprite.from(image);
+  sprite.scale.x /= 6;
+  sprite.scale.y /= 6;
+  sprites.set(entityId, sprite);
+  app.stage.addChild(sprite);
+  return sprite;
 }
 
+// TODO: convert to Diffs somehow?
 export function renderWorld(world: World, app: PIXI.Application) {
-  Object.values(world.entities).filter(entity => entity.type === "Actor").forEach(entity => {
-    const character = createCharacter(entity.id, app);
-    character.x = entity.location.x;
-    character.y = entity.location.y;
+  Object.values(world.entities).forEach(entity => {
+    const sprite = createSprite(entity.id, app, getImageByEntityType(entity.type));
+    sprite.rotation = entity.rotation;
+    sprite.x = entity.location.x;
+    sprite.y = entity.location.y;
   })
 }
 
@@ -38,30 +38,16 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
     }
     switch(diff.type) {
       case "Upsert": {
-        if (diff.target.type === "Actor") {
-          const character = sprites.get(diff.target.id) || createCharacter(diff.target.id, app);
-          character.x = diff.target.location.x;
-          character.y = diff.target.location.y;
-        }
-        else if(diff.target.type === "Projectile") {
-          const projectileSprite = sprites.get(diff.target.id) || createProjectile(diff.target.id, app);
-          projectileSprite.rotation = diff.target.rotation;
-          projectileSprite.x = diff.target.location.x;
-          projectileSprite.y = diff.target.location.y;
-        }
+        const sprite = sprites.get(diff.target.id) || createSprite(diff.target.id, app, getImageByEntityType(diff.target.type));
+        sprite.rotation = diff.target.rotation;
+        sprite.x = diff.target.location.x;
+        sprite.y = diff.target.location.y;
         return;
       }
       case "Delete": {
-        if (diff.target.type === "Actor") {
-          const character = sprites.get(diff.target.id)!;
-          app.stage.removeChild(character);
-          sprites.delete(diff.target.id);
-        }
-        else {
-          const projectileSprite = sprites.get(diff.target.id)!;
-          app.stage.removeChild(projectileSprite);
-          sprites.delete(diff.target.id);
-        }
+        const sprite = sprites.get(diff.targetId)!;
+        app.stage.removeChild(sprite);
+        sprites.delete(diff.targetId);
         return;
       }
     }

@@ -9,7 +9,8 @@ export type Actor = {
   id: number;
   type: "Actor"
   location: Location;
-  size: Size
+  rotation: number;
+  size: Size;
 }
 
 export type Projectile = {
@@ -17,6 +18,7 @@ export type Projectile = {
   type: "Projectile"
   location: Location;
   rotation: number;
+  size: Size;
 }
 
 export type Entity = Actor | Projectile
@@ -126,7 +128,7 @@ export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: Clien
   return Object.values(activities).reduce(({ world, diffs }, activity) => {
     const nextDiffs = performActivity(world, activity);
     return {
-      world: nextDiffs.reduce(applyDiff, world),
+      world: nextDiffs.reduce(applyDiffToWorld, world),
       diffs: [...diffs, ...nextDiffs]
     }
   }, seed);
@@ -156,7 +158,7 @@ function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity:
 }
 
 // TODO: maybe make immutable
-function applyDiff (world: World, diff: Diff): World {
+function applyDiffToWorld (world: World, diff: Diff): World {
   switch (diff.type) {
     case "Upsert": {
       if (diff.targetType == 'Entity') {
@@ -169,10 +171,10 @@ function applyDiff (world: World, diff: Diff): World {
     }
     case "Delete": {
       if (diff.targetType == 'Entity') {
-        delete world.entities[diff.target.id];
+        delete world.entities[diff.targetId];
       }
       else {
-        delete world.activities[diff.target.id];
+        delete world.activities[diff.targetId];
       }
       break;
     }
