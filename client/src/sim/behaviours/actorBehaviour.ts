@@ -31,7 +31,7 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
 
         const projectileActivity: Activity = { 
           id: generateProjectileId(),
-          rotation: projectile.rotation, velocity: 2, type: "Projectile", projectileId: projectile.id, 
+          rotation: projectile.rotation, velocity: 5, type: "Projectile", projectileId: projectile.id, 
           // TODO: use generic id generator?
         }
         return [
