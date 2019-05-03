@@ -5,9 +5,13 @@ import { Location } from './Physics';
 
 export type Size = { width: number; height: number; }
 
+export type UnitType = "Human" | "Monster" 
+
 export type Actor = {
   id: number;
-  type: "Actor"
+  unitType: UnitType;
+  type: "Actor";
+  playerId: number;
   location: Location;
   rotation: number;
   size: Size;
@@ -15,59 +19,13 @@ export type Actor = {
 
 export type Projectile = {
   id: number;
-  type: "Projectile"
+  type: "Projectile";
   location: Location;
   rotation: number;
   size: Size;
 }
 
 export type Entity = Actor | Projectile
-
-type DamageApplication = {
-  type: "DamageApplication";
-  target: Actor;
-}
-
-
-type ActorCreation = {
-  type: "ActorCreation";
-  target: Actor;
-}
-
-type ActorDestruction = {
-  type: "ActorDestruction";
-  target: Actor;
-}
-
-type ProjectileCreation = {
-  type: "ProjectileCreation";
-  target: Projectile;
-}
-
-type ProjectileMovement = {
-  type: "ProjectileMovement";
-  target: Projectile;
-}
-
-type ProjectileDestruction = {
-  type: "ProjectileDestruction";
-  target: Projectile;
-}
-
-type WorldCreation = {
-  type: "WorldCreation";
-  target: World;
-}
-
-type WorldCompletion = {
-  type: "WorldCompletion";
-  target: World;
-}
-
-type WorldDestruction = {
-  type: "WorldDestruction";
-  target: World;
-}
 
 type CharacterActivity = ({
   type: "Horizontal" | "Vertical";
@@ -77,7 +35,7 @@ type CharacterActivity = ({
 })
 & {
   playerId: number;
-  actorId: Actor["id"];
+  entityId: Actor["id"];
 }
 
 export type ProjectileActivity = {
@@ -86,7 +44,7 @@ export type ProjectileActivity = {
   velocity: number;
 }
 & {
-  projectileId: Projectile["id"];
+  entityId: Projectile["id"];
 }
 
 export type Activity = { id: number } & (CharacterActivity | ProjectileActivity)
@@ -96,12 +54,6 @@ export type CharacterCommand = {
   activity: CharacterActivity & { isOn: boolean; };
 }
 
-  //| ActorCreation | ActorMovement | ActorDestruction
-  // | DamageApplication
-  // | ProjectileCreation | ProjectileMovement | ProjectileDestruction
-  // | WorldCreation | WorldCompletion | WorldDestruction
-
-//type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 export type ClientCommand = CharacterCommand
 
 type Player = {
@@ -125,6 +77,10 @@ export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: Clien
   const worldWithUpdatedActivities = { ...world, activities };
   const seed: TickOutcome = { world: worldWithUpdatedActivities, diffs: [] };
   
+  const activatedEntities = Object.values(activities).map(x => world.entities[x.entityId]); // TODO: filter out by activities
+
+  activatedEntities.map(entity => affect(world, entity));
+
   return Object.values(activities).reduce(({ world, diffs }, activity) => {
     const nextDiffs = performActivity(world, activity);
     return {
@@ -141,7 +97,7 @@ function getNewActivityId () {
 }
 
 function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity: { isOn, ...otherProps } }: ClientCommand): ObjectMap<Activity> {
-  let currentActivity = Object.values(activities).find(x => x.type === otherProps.type && x.actorId === otherProps.actorId);
+  let currentActivity = Object.values(activities).find(x => x.type === otherProps.type && x.entityId === otherProps.entityId);
   if (isOn) {
     if (!currentActivity) {
       currentActivity = { id: getNewActivityId(), ...otherProps };
@@ -184,17 +140,39 @@ function applyDiffToWorld (world: World, diff: Diff): World {
 }
 
 function performActivity (world: World, activity: Activity): Diff[] {
-  try {
-    if (activity.type === "Projectile") {
-      const projectile = world.entities[activity.projectileId] as Projectile; // TODO: remove type casting
-      return projectileBehaviour.reduce(projectile, activity);
+  if (activity.type === "Projectile") {
+    const projectile = world.entities[activity.entityId] as Projectile; // TODO: remove type casting
+    return projectileBehaviour.reduce(projectile, activity);
+  }
+  else {
+    const actor = world.entities[activity.entityId] as Actor; // TODO: remove type casting
+    return actorBehaviour.reduce(actor, activity);
+  }
+}
+
+function intersects (rect1: { size: Size, location: Location }, rect2: { size: Size, location: Location }) {
+  return (
+    rect1.location.x > (rect2.location.x + rect2.size.width)
+    ||
+    (rect1.location.x + rect1.size.width) < rect2.location.x
+    ||
+    rect1.location.y > (rect2.location.y + rect2.size.height)
+    ||
+    (rect1.location.y + rect1.size.height) < rect2.location.y
+  );
+}
+
+function findAffectedEntities (world: World, entity: Entity) {
+  return Object.values(world.entities).filter(x => intersects(entity, x));
+}
+
+function affect (world: World, entity: Entity): Diff[] {
+  return findAffectedEntities(world, entity).map(otherEntity => {
+    if (entity.type === "Projectile") {
+      return projectileBehaviour.affect(entity, otherEntity);
     }
     else {
-      const actor = world.entities[activity.actorId] as Actor; // TODO: remove type casting
-      return actorBehaviour.reduce(actor, activity);
+      return actorBehaviour.affect(entity, otherEntity);
     }
-  }
-  finally{
-    console.log(activity, world.entities)
-  }
+  }).flat();
 }

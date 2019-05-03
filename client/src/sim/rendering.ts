@@ -1,13 +1,17 @@
 import { Diff } from "./Diff";
-import playerImage from '../assets/Player.png';
+import humanImage from '../assets/Human.png';
+import monsterImage from '../assets/Monster.png';
 import projectileImage from '../assets/Projectile.png';
 import { World, Entity } from "./process";
 
 const sprites = new Map<number, PIXI.Sprite>();
 
-function getImageByEntityType(entityType: Entity["type"]): string {
-  switch(entityType) {
-    case "Actor": return playerImage;
+function getImageByEntityType(entity: Entity): string {
+  switch (entity.type) {
+    case "Actor": switch(entity.unitType) {
+      case "Human": return humanImage;
+      case "Monster": return monsterImage;
+    };
     case "Projectile": return projectileImage;
   }
 }
@@ -24,7 +28,7 @@ function createSprite (entityId: number, app: PIXI.Application, image: string): 
 // TODO: convert to Diffs somehow?
 export function renderWorld(world: World, app: PIXI.Application) {
   Object.values(world.entities).forEach(entity => {
-    const sprite = createSprite(entity.id, app, getImageByEntityType(entity.type));
+    const sprite = createSprite(entity.id, app, getImageByEntityType(entity));
     sprite.rotation = entity.rotation;
     sprite.x = entity.location.x;
     sprite.y = entity.location.y;
@@ -38,7 +42,7 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
     }
     switch(diff.type) {
       case "Upsert": {
-        const sprite = sprites.get(diff.target.id) || createSprite(diff.target.id, app, getImageByEntityType(diff.target.type));
+        const sprite = sprites.get(diff.target.id) || createSprite(diff.target.id, app, getImageByEntityType(diff.target));
         sprite.rotation = diff.target.rotation;
         sprite.x = diff.target.location.x;
         sprite.y = diff.target.location.y;
@@ -52,11 +56,4 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
       }
     }
   })
-  // Object.values(world.actors).forEach(actor => {
-  //   //console.log('actor', actor.id, actor.location.x, actor.location.y);
-  //   const actorSprite = actorSprites.get(actor.id)!;
-  //   actorSprite.position.x = actor.location.x;
-  //   actorSprite.position.y = actor.location.y; 
-  //   //actorSprite.position.set(actor.location.x, actor.location.y);
-  // })
 }

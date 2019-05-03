@@ -5,17 +5,17 @@ import { FromEventTarget } from "rxjs/internal/observable/fromEvent";
 
 function mapKeyboard(event: KeyboardEvent, isOn: boolean, playerId: number): ClientCommand | undefined {
   switch (event.key) {
-    case 'w': return { type: "CharacterCommand", activity: { type: "Vertical", playerId,  actorId: 1, isOn, isNegative: true } };
-    case 's': return { type: "CharacterCommand", activity: { type: "Vertical", playerId, actorId: 1, isOn, isNegative: false } };
-    case 'd': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, actorId: 1, isOn, isNegative: false } };
-    case 'a': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, actorId: 1, isOn, isNegative: true } };
+    case 'w': return { type: "CharacterCommand", activity: { type: "Vertical", playerId,  entityId: 1, isOn, isNegative: true } };
+    case 's': return { type: "CharacterCommand", activity: { type: "Vertical", playerId, entityId: 1, isOn, isNegative: false } };
+    case 'd': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, entityId: 1, isOn, isNegative: false } };
+    case 'a': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, entityId: 1, isOn, isNegative: true } };
     default: return undefined;
   }
 }
 
 function mapMouse(event: MouseEvent, isOn: boolean, playerId: number): ClientCommand | undefined {
   switch (event.button) {
-    case 0: return { type: "CharacterCommand", activity: { type: "Shoot", playerId, actorId: 1, isOn } };
+    case 0: return { type: "CharacterCommand", activity: { type: "Shoot", playerId, entityId: 1, isOn } };
     default: return undefined;
   }
 }
@@ -24,7 +24,7 @@ const keyMap = new Map<string, { negative?: CharacterCommand; positive?: Charact
 function rememberPressedKeys(command: CharacterCommand): CharacterCommand {
   if (command && ((command.activity.type === "Horizontal" || command.activity.type === "Vertical"))) {
     const activity = command.activity;
-    const key = activity.type + ':' + activity.actorId;
+    const key = activity.type + ':' + activity.entityId;
     const commands = keyMap.get(key) || {};
     if (activity.isOn) {
       keyMap.set(key, { ...commands, ...(activity.isNegative ? { negative: command } : { positive: command }) });

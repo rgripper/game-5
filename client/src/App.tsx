@@ -15,24 +15,29 @@ function App () {
       const app = new PIXI.Application(800, 600, {backgroundColor : 0x1099bb});
       document.getElementById('app')!.appendChild(app.view);
 
-      const playerId = 1;
+      const humanPlayer = 1;
+      const monsterPlayer = 2;
 
       const initialOutcome: TickOutcome = {
         diffs: [],
         world: {
           players: {
-            [playerId]: { id: playerId }
+            [humanPlayer]: { id: humanPlayer },
+            [monsterPlayer]: { id: monsterPlayer }
           },
           activities: {}, 
           entities: {
-            "1": { location: { x: 25, y: 25 }, size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1, type: "Actor" }
+            "1": { location: { x: 25, y: 25 }, playerId: humanPlayer, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1, type: "Actor" },
+            "2": { location: { x: 125, y: 125 }, playerId: monsterPlayer, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 2, type: "Actor" },
+            "3": { location: { x: 145, y: 145 }, playerId: monsterPlayer, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 3, type: "Actor" },
+            "4": { location: { x: 76, y: 125 }, playerId: monsterPlayer, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 4, type: "Actor" }
           }, 
         }
       } 
 
       renderInitialWorld(initialOutcome.world, app);
 
-      const commands$ = convertEventsToCommands(document, playerId);
+      const commands$ = convertEventsToCommands(document, humanPlayer);
 
       const frames$: Observable<number> = Observable.create((subscriber: Subscriber<number>) => {
         app.ticker.add(x => subscriber.next(x))
