@@ -8,7 +8,6 @@ export function getRadians(angle: number): number {
 }
 
 export function move(location: Location, velocity: number, rotation: number): Location {
-  console.log("move", velocity * Math.sin(rotation));
   return {
     x: location.x + velocity * Math.cos(rotation),
     y: location.y + velocity * Math.sin(rotation)

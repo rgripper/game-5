@@ -27,6 +27,8 @@ export type Projectile = {
 
 export type Entity = Actor | Projectile
 
+type ActivityBase = { id: number }
+
 type CharacterActivity = ({
   type: "Horizontal" | "Vertical";
   isNegative: boolean;
@@ -34,7 +36,7 @@ type CharacterActivity = ({
   type: "Shoot";
 })
 & {
-  playerId: number;
+  playerId: number; // TODO: ensure player access beforehand and not pass
   entityId: Actor["id"];
 }
 
@@ -47,7 +49,7 @@ export type ProjectileActivity = {
   entityId: Projectile["id"];
 }
 
-export type Activity = { id: number } & (CharacterActivity | ProjectileActivity)
+export type Activity = ActivityBase & (CharacterActivity | ProjectileActivity)
 
 export type CharacterCommand = {
   type: "CharacterCommand";
@@ -63,6 +65,7 @@ type Player = {
 type ObjectMap<T> = {[key: string]: T}
 
 export type World = {
+  size: Size;
   entities: ObjectMap<Entity>;
   activities: ObjectMap<Activity>;
   players: ObjectMap<Player>;
@@ -79,7 +82,13 @@ export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: Clien
   
   const activatedEntities = Object.values(activities).map(x => world.entities[x.entityId]); // TODO: filter out by activities
 
-  activatedEntities.map(entity => affect(world, entity));
+  const affectsOutcome = activatedEntities.reduce(({ world, diffs }, entity) => {
+    const nextDiffs = affect(world, entity);
+    return {
+      world: nextDiffs.reduce(applyDiffToWorld, world),
+      diffs: [...diffs, ...nextDiffs]
+    }
+  }, seed);
 
   return Object.values(activities).reduce(({ world, diffs }, activity) => {
     const nextDiffs = performActivity(world, activity);
@@ -87,7 +96,7 @@ export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: Clien
       world: nextDiffs.reduce(applyDiffToWorld, world),
       diffs: [...diffs, ...nextDiffs]
     }
-  }, seed);
+  }, affectsOutcome);
 }
 
 let id = 100; // TODO: everything should acquire id from here
@@ -126,8 +135,9 @@ function applyDiffToWorld (world: World, diff: Diff): World {
       break;
     }
     case "Delete": {
-      if (diff.targetType == 'Entity') {
+      if (diff.targetType === 'Entity') {
         delete world.entities[diff.targetId];
+        Object.values(world.activities).filter(x => x.entityId === diff.targetId).forEach(x => delete world.activities[x.id]);
       }
       else {
         delete world.activities[diff.targetId];
@@ -151,7 +161,7 @@ function performActivity (world: World, activity: Activity): Diff[] {
 }
 
 function intersects (rect1: { size: Size, location: Location }, rect2: { size: Size, location: Location }) {
-  return (
+  return !(
     rect1.location.x > (rect2.location.x + rect2.size.width)
     ||
     (rect1.location.x + rect1.size.width) < rect2.location.x
@@ -167,8 +177,15 @@ function findAffectedEntities (world: World, entity: Entity) {
 }
 
 function affect (world: World, entity: Entity): Diff[] {
+  if (entity.type === "Projectile") {
+    if (!intersects(entity, { size: world.size, location: { x: 0, y: 0 } })) {
+      return [{ type: "Delete", targetType: "Entity", targetId: entity.id }]
+    }
+  }
+
   return findAffectedEntities(world, entity).map(otherEntity => {
     if (entity.type === "Projectile") {
+      if(otherEntity.type === "Projectile") return [];// TODO: its a hack
       return projectileBehaviour.affect(entity, otherEntity);
     }
     else {

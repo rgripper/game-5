@@ -24,7 +24,7 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
       case "Shoot": {
         const projectile: Projectile = { 
           id: generateProjectileId(), 
-          location: { ...actor.location, x: actor.location.x + actor.size.width, y: actor.location.y - actor.size.height }, // TODO: generate shooting point
+          location: { ...actor.location, x: actor.location.x + actor.size.width, y: actor.location.y - actor.size.height - 15 }, // TODO: generate shooting point
           size: { width: 4, height: 2 },
           rotation: actor.rotation,
           type: "Projectile" 

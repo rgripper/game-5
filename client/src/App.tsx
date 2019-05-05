@@ -21,6 +21,7 @@ function App () {
       const initialOutcome: TickOutcome = {
         diffs: [],
         world: {
+          size: { width: 500, height: 500 },
           players: {
             [humanPlayer]: { id: humanPlayer },
             [monsterPlayer]: { id: monsterPlayer }
