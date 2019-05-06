@@ -12,7 +12,7 @@ import { getRadians } from './sim/Physics';
 function App () {
 
     useEffect(() => {
-      const app = new PIXI.Application(800, 600, {backgroundColor : 0x1099bb});
+      const app = new PIXI.Application(800, 600, {backgroundColor : 0xD500F9});
       document.getElementById('app')!.appendChild(app.view);
 
       const humanPlayer = 1;

@@ -4,7 +4,7 @@ import monsterImage from '../assets/Monster.png';
 import projectileImage from '../assets/Projectile.png';
 import { World, Entity } from "./process";
 
-const sprites = new Map<number, PIXI.Sprite>();
+const containers = new Map<number, PIXI.DisplayObject>();
 
 function getImageByEntityType(entity: Entity): string {
   switch (entity.type) {
@@ -16,22 +16,36 @@ function getImageByEntityType(entity: Entity): string {
   }
 }
 
-function createSprite (entityId: number, app: PIXI.Application, image: string): PIXI.Sprite {
+function createDisplayObject (entity: Entity, app: PIXI.Application, image: string): PIXI.DisplayObject {
   const sprite = PIXI.Sprite.from(image);
+
   sprite.scale.x /= 6;
   sprite.scale.y /= 6;
-  sprites.set(entityId, sprite);
-  app.stage.addChild(sprite);
-  return sprite;
+
+  const collisionRect = new PIXI.Graphics();
+  // set the line style to have a width of 5 and set the color to red
+  collisionRect.lineStyle(1, 0x90CAF9, 0.8);
+  // draw a rectangle
+  collisionRect.drawRect(0, 0, entity.size.width, entity.size.height);
+  
+  const container = new PIXI.Container();
+
+  container.addChild(sprite);
+  container.addChild(collisionRect);
+
+  app.stage.addChild(container);
+
+  containers.set(entity.id, container);
+  return container;
 }
 
 // TODO: convert to Diffs somehow?
 export function renderWorld(world: World, app: PIXI.Application) {
   Object.values(world.entities).forEach(entity => {
-    const sprite = createSprite(entity.id, app, getImageByEntityType(entity));
-    sprite.rotation = entity.rotation;
-    sprite.x = entity.location.x;
-    sprite.y = entity.location.y;
+    const displayObject = createDisplayObject(entity, app, getImageByEntityType(entity));
+    displayObject.rotation = entity.rotation;
+    displayObject.x = entity.location.x;
+    displayObject.y = entity.location.y;
   })
 }
 
@@ -42,16 +56,16 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
     }
     switch(diff.type) {
       case "Upsert": {
-        const sprite = sprites.get(diff.target.id) || createSprite(diff.target.id, app, getImageByEntityType(diff.target));
-        sprite.rotation = diff.target.rotation;
-        sprite.x = diff.target.location.x;
-        sprite.y = diff.target.location.y;
+        const displayObject = containers.get(diff.target.id) || createDisplayObject(diff.target, app, getImageByEntityType(diff.target));
+        displayObject.rotation = diff.target.rotation;
+        displayObject.x = diff.target.location.x;
+        displayObject.y = diff.target.location.y;
         return;
       }
       case "Delete": {
-        const sprite = sprites.get(diff.targetId)!;
+        const sprite = containers.get(diff.targetId)!;
         app.stage.removeChild(sprite);
-        sprites.delete(diff.targetId);
+        containers.delete(diff.targetId);
         return;
       }
     }
