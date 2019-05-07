@@ -15,6 +15,9 @@ export type Actor = {
   location: Location;
   rotation: number;
   size: Size;
+
+  maxHealth: number;
+  currentHealth: number;
 }
 
 export type Projectile = {
@@ -73,6 +76,13 @@ export type World = {
 
 export type TickOutcome = { world: World; diffs: Diff[] };
 
+function applyAllDiffsToWorld ({ world, diffs }: TickOutcome, nextDiffs: Diff[]) {
+  return {
+    world: nextDiffs.reduce(applyDiffToWorld, world),
+    diffs: [...diffs, ...nextDiffs]
+  }
+}
+
 export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: ClientCommand[]): TickOutcome {
   const activities = clientCommands.reduce(reduceActivitiesByCommand, world.activities);
 
@@ -84,18 +94,12 @@ export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: Clien
 
   const affectsOutcome = activatedEntities.reduce(({ world, diffs }, entity) => {
     const nextDiffs = affect(world, entity);
-    return {
-      world: nextDiffs.reduce(applyDiffToWorld, world),
-      diffs: [...diffs, ...nextDiffs]
-    }
+    return applyAllDiffsToWorld({ world, diffs }, nextDiffs);
   }, seed);
 
   return Object.values(activities).reduce(({ world, diffs }, activity) => {
     const nextDiffs = performActivity(world, activity);
-    return {
-      world: nextDiffs.reduce(applyDiffToWorld, world),
-      diffs: [...diffs, ...nextDiffs]
-    }
+    return applyAllDiffsToWorld({ world, diffs }, nextDiffs);
   }, affectsOutcome);
 }
 

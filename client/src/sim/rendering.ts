@@ -57,6 +57,9 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
     switch(diff.type) {
       case "Upsert": {
         const displayObject = containers.get(diff.target.id) || createDisplayObject(diff.target, app, getImageByEntityType(diff.target));
+        if (diff.target.type === "Actor") {
+          displayObject.alpha = diff.target.currentHealth / diff.target.maxHealth;
+        }
         displayObject.rotation = diff.target.rotation;
         displayObject.x = diff.target.location.x;
         displayObject.y = diff.target.location.y;

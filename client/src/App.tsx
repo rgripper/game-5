@@ -28,10 +28,10 @@ function App () {
           },
           activities: {}, 
           entities: {
-            "1": { location: { x: 25, y: 25 }, playerId: humanPlayer, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1, type: "Actor" },
-            "2": { location: { x: 125, y: 125 }, playerId: monsterPlayer, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 2, type: "Actor" },
-            "3": { location: { x: 145, y: 145 }, playerId: monsterPlayer, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 3, type: "Actor" },
-            "4": { location: { x: 76, y: 125 }, playerId: monsterPlayer, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 4, type: "Actor" }
+            "1": { location: { x: 25, y: 25 }, playerId: humanPlayer, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1, type: "Actor" },
+            "2": { location: { x: 125, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 2, type: "Actor" },
+            "3": { location: { x: 145, y: 145 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 3, type: "Actor" },
+            "4": { location: { x: 76, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 4, type: "Actor" }
           }, 
         }
       } 

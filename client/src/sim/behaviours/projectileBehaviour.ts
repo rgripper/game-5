@@ -1,4 +1,4 @@
-import { Activity, Entity, Projectile } from "../process";
+import { Activity, Entity, Projectile, Actor } from "../process";
 import { EntityBehaviour } from "./EntityBehaviour";
 import { Diff } from "../Diff";
 import { move } from "../Physics";
@@ -17,12 +17,24 @@ export const projectileBehaviour: EntityBehaviour<Projectile> = {
     }
   },
   
+  // TODO: area of effect - damage, apply to an array?
   affect(projectile: Projectile, otherEntity: Entity): Diff[] {
+    if (otherEntity.type === "Projectile") {
+      return [];
+    }
     return [
       { type: "Delete", targetType: "Entity", targetId: projectile.id },
-      { type: "Delete", targetType: "Entity", targetId: otherEntity.id }
+      applyDamage(projectile, otherEntity)
     ]; // TODO: damage
   }
+}
 
-  // TODO: area of effect - damage
+function applyDamage(projectile: Projectile, otherActor: Actor): Diff {
+  const nextHealth = otherActor.currentHealth - 2;
+  if (nextHealth <= 0) {
+    return { type: "Delete", targetType: "Entity", targetId: otherActor.id };
+  }
+  else {
+    return { type: "Upsert", targetType: "Entity", target: { ...otherActor, currentHealth: nextHealth } };
+  }
 }

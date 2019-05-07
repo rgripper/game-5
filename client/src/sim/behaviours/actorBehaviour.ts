@@ -1,7 +1,6 @@
 import { Actor, Activity, Entity, Projectile, ProjectileActivity } from "../process";
 import { EntityBehaviour } from "./EntityBehaviour";
 import { Diff } from "../Diff";
-import { getRadians } from "../Physics";
 
 // TODO: refactor
 let projectile = 10;
