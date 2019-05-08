@@ -1,4 +1,4 @@
-import { Activity, Entity } from "../process";
+import { Activity, Entity } from "../worldProcessor";
 import { Diff } from "../Diff";
 
 export interface EntityBehaviour<TEntity extends Entity> {

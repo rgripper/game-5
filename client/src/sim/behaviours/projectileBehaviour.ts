@@ -1,4 +1,4 @@
-import { Activity, Entity, Projectile, Actor } from "../process";
+import { Activity, Entity, Projectile, Actor } from "../worldProcessor";
 import { EntityBehaviour } from "./EntityBehaviour";
 import { Diff } from "../Diff";
 import { move } from "../Physics";

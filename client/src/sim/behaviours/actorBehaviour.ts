@@ -1,13 +1,7 @@
-import { Actor, Activity, Entity, Projectile, ProjectileActivity } from "../process";
+import { Actor, Activity, Entity, Projectile } from "../worldProcessor";
 import { EntityBehaviour } from "./EntityBehaviour";
 import { Diff } from "../Diff";
-
-// TODO: refactor
-let projectile = 10;
-
-function generateProjectileId () {
-  return projectile++;
-}
+import { getNewId } from "../Identity";
 
 export const actorBehaviour: EntityBehaviour<Actor> = {
   reduce(actor: Actor, activity: Activity): Diff[] {
@@ -32,7 +26,7 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
 
 function shoot (actor: Actor): Diff[] {
   const projectile: Projectile = { 
-    id: generateProjectileId(), 
+    id: getNewId(), 
     location: { ...actor.location, x: actor.location.x + actor.size.width, y: actor.location.y - actor.size.height - 15 }, // TODO: generate shooting point
     size: { width: 4, height: 2 },
     rotation: actor.rotation,
@@ -40,9 +34,11 @@ function shoot (actor: Actor): Diff[] {
   };
 
   const projectileActivity: Activity = { 
-    id: generateProjectileId(),
-    rotation: projectile.rotation, velocity: 5, type: "Projectile", entityId: projectile.id, 
-    // TODO: use generic id generator?
+    id: getNewId(),
+    rotation: projectile.rotation, 
+    velocity: 5, 
+    type: "Projectile", 
+    entityId: projectile.id
   }
   return [
     { target: projectile, targetType: "Entity", type: "Upsert" },

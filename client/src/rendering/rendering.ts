@@ -1,8 +1,8 @@
-import { Diff } from "./Diff";
+import { Diff } from "../sim/Diff";
 import humanImage from '../assets/Human.png';
 import monsterImage from '../assets/Monster.png';
 import projectileImage from '../assets/Projectile.png';
-import { World, Entity } from "./process";
+import { World, Entity } from "../sim/worldProcessor";
 
 const containers = new Map<number, PIXI.DisplayObject>();
 

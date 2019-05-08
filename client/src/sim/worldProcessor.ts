@@ -1,9 +1,8 @@
 import { Diff } from "./Diff";
 import { actorBehaviour } from "./behaviours/actorBehaviour";
 import { projectileBehaviour } from "./behaviours/projectileBehaviour";
-import { Location } from './Physics';
-
-export type Size = { width: number; height: number; }
+import { Size, intersects, Point } from "./Geometry";
+import { getNewId } from "./Identity";
 
 export type UnitType = "Human" | "Monster" 
 
@@ -12,7 +11,7 @@ export type Actor = {
   unitType: UnitType;
   type: "Actor";
   playerId: number;
-  location: Location;
+  location: Point;
   rotation: number;
   size: Size;
 
@@ -23,7 +22,7 @@ export type Actor = {
 export type Projectile = {
   id: number;
   type: "Projectile";
-  location: Location;
+  location: Point;
   rotation: number;
   size: Size;
 }
@@ -43,7 +42,7 @@ type CharacterActivity = ({
   entityId: Actor["id"];
 }
 
-export type ProjectileActivity = {
+type ProjectileActivity = {
   type: "Projectile";
   rotation: number;
   velocity: number;
@@ -61,11 +60,15 @@ export type CharacterCommand = {
 
 export type ClientCommand = CharacterCommand
 
-type Player = {
+export type GameInitCommand = {
+  diffs: Diff[];
+}
+
+export type Player = {
   id: number;
 }
 
-type ObjectMap<T> = {[key: string]: T}
+export type ObjectMap<T> = {[key: string]: T}
 
 export type World = {
   size: Size;
@@ -75,13 +78,6 @@ export type World = {
 }
 
 export type TickOutcome = { world: World; diffs: Diff[] };
-
-function applyAllDiffsToWorld ({ world, diffs }: TickOutcome, nextDiffs: Diff[]) {
-  return {
-    world: nextDiffs.reduce(applyDiffToWorld, world),
-    diffs: [...diffs, ...nextDiffs]
-  }
-}
 
 export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: ClientCommand[]): TickOutcome {
   const activities = clientCommands.reduce(reduceActivitiesByCommand, world.activities);
@@ -103,17 +99,18 @@ export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: Clien
   }, affectsOutcome);
 }
 
-let id = 100; // TODO: everything should acquire id from here
-
-function getNewActivityId () {
-  return id++;
+function applyAllDiffsToWorld ({ world, diffs }: TickOutcome, nextDiffs: Diff[]) {
+  return {
+    world: nextDiffs.reduce(applyDiffToWorld, world),
+    diffs: [...diffs, ...nextDiffs]
+  }
 }
 
 function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity: { isOn, ...otherProps } }: ClientCommand): ObjectMap<Activity> {
   let currentActivity = Object.values(activities).find(x => x.type === otherProps.type && x.entityId === otherProps.entityId);
   if (isOn) {
     if (!currentActivity) {
-      currentActivity = { id: getNewActivityId(), ...otherProps };
+      currentActivity = { id: getNewId(), ...otherProps };
     }
     return { ...activities, [currentActivity.id]: { ...currentActivity, ...otherProps } };
   }
@@ -162,18 +159,6 @@ function performActivity (world: World, activity: Activity): Diff[] {
     const actor = world.entities[activity.entityId] as Actor; // TODO: remove type casting
     return actorBehaviour.reduce(actor, activity);
   }
-}
-
-function intersects (rect1: { size: Size, location: Location }, rect2: { size: Size, location: Location }) {
-  return !(
-    rect1.location.x > (rect2.location.x + rect2.size.width)
-    ||
-    (rect1.location.x + rect1.size.width) < rect2.location.x
-    ||
-    rect1.location.y > (rect2.location.y + rect2.size.height)
-    ||
-    (rect1.location.y + rect1.size.height) < rect2.location.y
-  );
 }
 
 function findAffectedEntities (world: World, entity: Entity) {

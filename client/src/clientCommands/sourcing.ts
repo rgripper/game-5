@@ -1,5 +1,5 @@
 import { fromEvent, merge, Observable } from "rxjs";
-import { ClientCommand, CharacterCommand } from "../sim/process";
+import { ClientCommand, CharacterCommand } from "../sim/worldProcessor";
 import { filter, map, tap } from "rxjs/operators";
 import { FromEventTarget } from "rxjs/internal/observable/fromEvent";
 

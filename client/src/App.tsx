@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import * as PIXI from 'pixi.js';
 import './App.css';
-import {reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/process';
+import {reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/worldProcessor';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { convertEventsToCommands } from './clientCommands/sourcing';
-import { renderDiffs, renderWorld as renderInitialWorld } from './sim/rendering';
+import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
 import { Observable, Subscriber } from 'rxjs';
 import { Diff } from './sim/Diff';
 import { getRadians } from './sim/Physics';
@@ -45,6 +45,7 @@ function App () {
       });
 
       const batchCommandsPerTick = bufferTime<ClientCommand>(10);
+      // todo: something about it needs changing
       const runTickPerCommandBatch = scan(reduceWorldOnTick, initialOutcome);
       const batchTicksPerFrame = buffer<TickOutcome>(frames$);
       const collectDiffsFromTicks = map<TickOutcome[], Diff[]>(outcomes => outcomes.map(x => x.diffs).flat());

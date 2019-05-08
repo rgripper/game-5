@@ -1,4 +1,4 @@
-import { Activity, Entity } from "./process";
+import { Activity, Entity } from "./worldProcessor";
 
 export type DiffType = "Upsert" | "Delete"
 
