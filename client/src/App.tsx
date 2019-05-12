@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import * as PIXI from 'pixi.js';
 import './App.css';
-import { reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/worldProcessor';
+import { reduceWorldOnTick, TickOutcome, ClientCommand, Actor } from './sim/worldProcessor';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
-import { convertEventsToCommands } from './clientCommands/sourcing';
+import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
 import { Observable, Subscriber } from 'rxjs';
 import { Diff } from './sim/Diff';
 import { getRadians } from './sim/Physics';
+import { getNewId } from './sim/Identity';
 
 function App () {
 
@@ -18,6 +19,18 @@ function App () {
       const humanPlayer = 1;
       const monsterPlayer = 2;
 
+      const humanActor: Actor = { location: { x: 25, y: 25 }, playerId: humanPlayer, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: getNewId(), type: "Actor" };
+
+      const monsters: Actor[] = [
+        { location: { x: 125, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
+        { location: { x: 145, y: 145 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
+        { location: { x: 76, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" }
+      ]
+
+      const actors = monsters.reduce((acc, current) => ({ ...acc, [current.id.toString()]: current }), {
+        [humanActor.id.toString()]: humanActor
+      })
+
       const initialOutcome: TickOutcome = {
         diffs: [],
         world: {
@@ -27,18 +40,13 @@ function App () {
             [monsterPlayer]: { id: monsterPlayer }
           },
           activities: {}, 
-          entities: {
-            "1": { location: { x: 25, y: 25 }, playerId: humanPlayer, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1, type: "Actor" },
-            "2": { location: { x: 125, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 2, type: "Actor" },
-            "3": { location: { x: 145, y: 145 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 3, type: "Actor" },
-            "4": { location: { x: 76, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 4, type: "Actor" }
-          }, 
+          entities: actors, 
         }
       } 
 
       renderInitialWorld(initialOutcome.world, app);
 
-      const commands$ = convertEventsToCommands(document, humanPlayer);
+      const commands$ = mapEventsToCommands(document, humanActor.playerId, humanActor.id);
 
       const frames$: Observable<number> = Observable.create((subscriber: Subscriber<number>) => {
         app.ticker.add(x => subscriber.next(x))

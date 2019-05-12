@@ -13,7 +13,14 @@ const initialMovementTracker: MovementTracker = {
   horizontal: {}
 };
 
-export function mapKeysToCommands (keyUps$: Observable<KeyboardEvent>, keyDowns$: Observable<KeyboardEvent>) {
+type MapKeysToCommandsParams = {
+  keyUps$: Observable<KeyboardEvent>; 
+  keyDowns$: Observable<KeyboardEvent>; 
+  playerId: number;
+  entityId: number;
+} 
+
+export function mapKeysToCommands ({ keyUps$, keyDowns$, playerId, entityId }: MapKeysToCommandsParams) {
   const keyEvents$ = merge(
     keyUps$.pipe(map(event => ({ event, reducer: removeAxisState }))),
     keyDowns$.pipe(map(event => ({ event, reducer: setAxisState })))
@@ -24,12 +31,8 @@ export function mapKeysToCommands (keyUps$: Observable<KeyboardEvent>, keyDowns$
       (tracker, { event, reducer }) => reduceTrackerWithKey(tracker, event.key, reducer), initialMovementTracker
     ),
     distinctUntilChanged(),
-    map(mapKeyboardDefault)
+    map(movementTracker =>  mapKeyboard(movementTracker, playerId, entityId))
   );
-}
-
-function mapKeyboardDefault(movementTracker: MovementTracker) {
-    return mapKeyboard(movementTracker, 1, 1);
 }
 
 function reduceTrackerWithKey (movementTracker: MovementTracker, key: string, axisStateTrackerReducer: AxisTrackerReducer): MovementTracker {
