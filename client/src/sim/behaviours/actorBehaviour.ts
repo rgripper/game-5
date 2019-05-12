@@ -1,4 +1,4 @@
-import { Actor, Activity, Entity, Projectile } from "../worldProcessor";
+import { Actor, Activity, Entity, Projectile, AxisState } from "../worldProcessor";
 import { EntityBehaviour } from "./EntityBehaviour";
 import { Diff } from "../Diff";
 import { getNewId } from "../Identity";
@@ -6,15 +6,19 @@ import { getNewId } from "../Identity";
 export const actorBehaviour: EntityBehaviour<Actor> = {
   reduce(actor: Actor, activity: Activity): Diff[] {
     switch(activity.type) {
-      case "Horizontal": {
-        const updatedActor = { ...actor, location: { ...actor.location, x: actor.location.x + 2 * (activity.isNegative ? -1 : 1) } };
+      case "CharacterMove": {
+        const updatedActor = { 
+          ...actor, 
+          location: { 
+            ...actor.location, 
+            x: activity.horizontal !== undefined ? (actor.location.x + 2 * (activity.horizontal === AxisState.Negative ? -1 : 1)) : actor.location.x,
+            y: activity.vertical !== undefined ? (actor.location.y + 2 * (activity.vertical === AxisState.Negative ? -1 : 1)) : actor.location.y
+          } 
+        };
+
         return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
       }
-      case "Vertical": {
-        const updatedActor = { ...actor, location: { ...actor.location, y: actor.location.y + 2 * (activity.isNegative ? -1 : 1) } };
-        return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
-      }
-      case "Shoot": return shoot(actor);
+      case "CharacterShoot": return shoot(actor);
       default: return [];
     }
   },
@@ -37,7 +41,7 @@ function shoot (actor: Actor): Diff[] {
     id: getNewId(),
     rotation: projectile.rotation, 
     velocity: 5, 
-    type: "Projectile", 
+    type: "ProjectileMove", 
     entityId: projectile.id
   }
   return [

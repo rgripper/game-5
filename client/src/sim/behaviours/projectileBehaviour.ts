@@ -6,7 +6,7 @@ import { move } from "../Physics";
 export const projectileBehaviour: EntityBehaviour<Projectile> = {
   reduce(projectile: Projectile, activity: Activity): Diff[] {
     switch (activity.type) {
-      case "Projectile": {
+      case "ProjectileMove": {
         const updatedProjectile = { 
           ...projectile, 
           location: move(projectile.location, activity.velocity, activity.rotation)
@@ -25,7 +25,7 @@ export const projectileBehaviour: EntityBehaviour<Projectile> = {
     return [
       { type: "Delete", targetType: "Entity", targetId: projectile.id },
       applyDamage(projectile, otherEntity)
-    ]; // TODO: damage
+    ];
   }
 }
 

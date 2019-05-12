@@ -1,60 +1,29 @@
 import { fromEvent, merge, Observable } from "rxjs";
-import { ClientCommand, CharacterCommand } from "../sim/worldProcessor";
+import { ClientCommand } from "../sim/worldProcessor";
 import { filter, map, tap } from "rxjs/operators";
 import { FromEventTarget } from "rxjs/internal/observable/fromEvent";
-
-function mapKeyboard(event: KeyboardEvent, isOn: boolean, playerId: number): ClientCommand | undefined {
-  switch (event.key) {
-    case 'w': return { type: "CharacterCommand", activity: { type: "Vertical", playerId,  entityId: 1, isOn, isNegative: true } };
-    case 's': return { type: "CharacterCommand", activity: { type: "Vertical", playerId, entityId: 1, isOn, isNegative: false } };
-    case 'd': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, entityId: 1, isOn, isNegative: false } };
-    case 'a': return { type: "CharacterCommand", activity: { type: "Horizontal", playerId, entityId: 1, isOn, isNegative: true } };
-    default: return undefined;
-  }
-}
+import {  mapKeysToCommands } from "./MovementControl";
 
 function mapMouse(event: MouseEvent, isOn: boolean, playerId: number): ClientCommand | undefined {
   switch (event.button) {
-    case 0: return { type: "CharacterCommand", activity: { type: "Shoot", playerId, entityId: 1, isOn } };
+    case 0: return { type: "CharacterControlCommand", activity: { type: "CharacterShoot", playerId, entityId: 1, isOn } };
     default: return undefined;
-  }
-}
-
-const keyMap = new Map<string, { negative?: CharacterCommand; positive?: CharacterCommand; }>();
-function rememberPressedKeys(command: CharacterCommand): CharacterCommand {
-  if (command && ((command.activity.type === "Horizontal" || command.activity.type === "Vertical"))) {
-    const activity = command.activity;
-    const key = activity.type + ':' + activity.entityId;
-    const commands = keyMap.get(key) || {};
-    if (activity.isOn) {
-      keyMap.set(key, { ...commands, ...(activity.isNegative ? { negative: command } : { positive: command }) });
-      return command;
-    }
-    else {
-      const newCommands = { ...commands, ...(activity.isNegative ? { negative: undefined } : { positive: undefined }) };
-      keyMap.set(key, newCommands);
-      return newCommands.negative || newCommands.positive || command
-    }
-  }
-  else {
-    return command;
   }
 }
 
 export function convertEventsToCommands (target: FromEventTarget<any>, playerId: number) {
-  const keyCommandsOn = fromEvent<KeyboardEvent>(target, 'keydown').pipe(filter(x => !x.repeat), map(event => mapKeyboard(event, true, playerId)));
-  const keyCommandsOff = fromEvent<KeyboardEvent>(target, 'keyup').pipe(map(event => mapKeyboard(event, false, playerId)));
-  
-  const keyCommands = merge(keyCommandsOn, keyCommandsOff).pipe(filter(x => x !== null)) as Observable<ClientCommand>;
-  
-  const improvedKeyCommands = keyCommands.pipe(map(rememberPressedKeys))
-  
-  const mouseCommandsOn = fromEvent<MouseEvent>(document, 'mousedown').pipe(map(event => mapMouse(event, true, playerId)));
-  const mouseCommandsOff = fromEvent<MouseEvent>(document, 'mouseup').pipe(map(event => mapMouse(event, false, playerId)));
-  const mouseCommands = merge(mouseCommandsOn, mouseCommandsOff).pipe(filter(x => x !== null)) as Observable<ClientCommand>;
-  
-  const allCommands = merge(improvedKeyCommands, mouseCommands).pipe(tap(x => console.log(x)));
 
-  return allCommands;
+  const keyDowns$ = fromEvent<KeyboardEvent>(target, 'keydown').pipe(filter(x => !x.repeat));
+  const keyUps$ = fromEvent<KeyboardEvent>(target, 'keyup');
+  
+  const movementTrackers$ = mapKeysToCommands(keyUps$, keyDowns$);
+  
+  const mouseCommandsOn$ = fromEvent<MouseEvent>(document, 'mousedown').pipe(map(event => mapMouse(event, true, playerId)));
+  const mouseCommandsOff$ = fromEvent<MouseEvent>(document, 'mouseup').pipe(map(event => mapMouse(event, false, playerId)));
+  const mouseCommands$ = merge(mouseCommandsOn$, mouseCommandsOff$).pipe(filter(x => x !== null)) as Observable<ClientCommand>;
+  
+  const allCommands$ = merge(movementTrackers$, mouseCommands$);
+
+  return allCommands$;
 }
 

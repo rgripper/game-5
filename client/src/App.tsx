@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import * as PIXI from 'pixi.js';
 import './App.css';
-import {reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/worldProcessor';
+import { reduceWorldOnTick, TickOutcome, ClientCommand } from './sim/worldProcessor';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { convertEventsToCommands } from './clientCommands/sourcing';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
