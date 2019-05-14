@@ -4,6 +4,11 @@ import { projectileBehaviour } from "./behaviours/projectileBehaviour";
 import { Size, intersects, Point } from "./Geometry";
 import { getNewId } from "./Identity";
 
+export interface EntityBehaviour<TEntity extends Entity> {
+  reduce(entity: TEntity, activity: Activity): Diff[]
+  affect(entity: TEntity, otherEntity: Entity): Diff[]
+}
+
 export type UnitType = "Human" | "Monster" 
 
 export type Actor = {

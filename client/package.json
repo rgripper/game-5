@@ -8,7 +8,8 @@
     "react-dom": "^16.8.3",
     "react-scripts": "2.1.5",
     "rxjs": "^6.4.0",
-    "typescript": "3.4.1"
+    "typescript": "3.4.1",
+    "game_5_sim": "../game-5-sim/pkg"
   },
   "scripts": {
     "start": "react-scripts start",

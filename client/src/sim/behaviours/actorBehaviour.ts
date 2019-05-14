@@ -1,5 +1,4 @@
-import { Actor, Activity, Entity, Projectile, AxisState } from "../worldProcessor";
-import { EntityBehaviour } from "./EntityBehaviour";
+import { Actor, Activity, Entity, Projectile, AxisState, EntityBehaviour } from "../worldProcessor";
 import { Diff } from "../Diff";
 import { getNewId } from "../Identity";
 

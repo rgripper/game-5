@@ -2,6 +2,9 @@
 	"folders": [
     {
       "path": "client"
+    },
+    {
+      "path": "game-5-sim"
     }
   ],
   "settings": {}

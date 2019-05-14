@@ -9,10 +9,12 @@ import { Observable, Subscriber } from 'rxjs';
 import { Diff } from './sim/Diff';
 import { getRadians } from './sim/Physics';
 import { getNewId } from './sim/Identity';
+import { greet } from "game_5_sim";
 
 function App () {
 
     useEffect(() => {
+      greet();
       const app = new PIXI.Application(800, 600, {backgroundColor : 0xD500F9});
       document.getElementById('app')!.appendChild(app.view);
 
