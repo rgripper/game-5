@@ -15,7 +15,7 @@ pub fn run() -> Result<(), JsValue> {
     let document = window.document().expect("should have a Document");
 
     let p: web_sys::Node = document.create_element("p")?.into();
-    p.set_text_content(Some("Hello from Rust, WebAssembly, and Webpack!"));
+    p.set_text_content(Some("Hello from Rust, WebAssembly, and Webpack!2233"));
 
     let body = document.body().expect("should have a body but not necessary");
     let body: &web_sys::Node = body.as_ref();

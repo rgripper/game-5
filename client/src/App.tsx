@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import * as PIXI from 'pixi.js';
-import './App.css';
 import { reduceWorldOnTick, TickOutcome, ClientCommand, Actor } from './sim/worldProcessor';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
@@ -9,13 +8,16 @@ import { Observable, Subscriber } from 'rxjs';
 import { Diff } from './sim/Diff';
 import { getRadians } from './sim/Physics';
 import { getNewId } from './sim/Identity';
-import { greet } from "game_5_sim";
 
 function App () {
 
     useEffect(() => {
-      greet();
-      const app = new PIXI.Application(800, 600, {backgroundColor : 0xD500F9});
+      import("../crate/pkg").then(module => {
+        module.run();
+      });
+      
+
+      const app = new PIXI.Application({backgroundColor : 0xD500F9, width: 800, height: 600});
       document.getElementById('app')!.appendChild(app.view);
 
       const humanPlayer = 1;
@@ -50,8 +52,8 @@ function App () {
 
       const commands$ = mapEventsToCommands(document, humanActor.playerId, humanActor.id);
 
-      const frames$: Observable<number> = Observable.create((subscriber: Subscriber<number>) => {
-        app.ticker.add(x => subscriber.next(x))
+      const frames$: Observable<void> = Observable.create((subscriber: Subscriber<void>) => {
+        app.ticker.add(() => subscriber.next())
       });
 
       const batchCommandsPerTick = bufferTime<ClientCommand>(10);
