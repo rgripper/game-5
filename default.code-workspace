@@ -5,7 +5,12 @@
     },
     {
       "path": "game-5-sim"
+    },
+    {
+      "path": "tmp"
     }
   ],
-  "settings": {}
+  "settings": {
+    "git.ignoreLimitWarning": true
+  }
 }

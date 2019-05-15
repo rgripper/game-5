@@ -1,0 +1,11 @@
+let id = 100; 
+
+export function getNewId(): number {
+    return id++;
+}
+
+export type ID = number;
+
+export type Identifiable = {
+    id: ID;
+}
