@@ -1,10 +1,10 @@
 {
 	"folders": [
     {
-      "path": "client"
+      "path": "game-5-sim"
     },
     {
-      "path": "game-5-sim"
+      "path": "client"
     }
   ],
   "settings": {

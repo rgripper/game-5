@@ -12,8 +12,8 @@ import { getNewId } from './sim/Identity';
 function App () {
 
     useEffect(() => {
-      import("../crate/pkg").then(module => {
-        module.run();
+      import("../../game-5-sim/crate/pkg").then(({ greet }) => {
+        greet();
       });
       
 
