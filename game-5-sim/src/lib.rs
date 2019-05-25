@@ -3,6 +3,9 @@ mod utils;
 mod world;
 mod geometry;
 mod physics;
+mod sim;
+mod diff;
+mod behaviours;
 
 use std::collections::HashMap;
 use geometry::{ Rect, Point, Size };
@@ -39,7 +42,7 @@ pub fn greet() {
             } 
         },
         players: HashMap::new(),
-        actors: HashMap::new(),
+        entities: HashMap::new(),
         processes: HashMap::new(),
     };
 

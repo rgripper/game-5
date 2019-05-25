@@ -1,61 +1,62 @@
 use std::collections::HashMap;
-use crate::geometry::{Size, Rect, Radians};
+use crate::geometry::{Rect, Radians};
 use crate::physics::{Velocity};
 
 pub type ID = i32;
 
+pub type GenNewID = fn () -> ID;
+
+#[derive(Debug, Copy, Clone)]
 pub struct Health {
     pub max: u32,
     pub current: u32,
 }
 
-pub enum UnitType {
+#[derive(Debug, Copy, Clone)]
+pub enum EntityType {
     Human, 
-    Monster
+    Monster,
+    Projectile,
 }
 
-pub struct Actor {
+#[derive(Debug, Copy, Clone)]
+pub struct Entity {
+    pub id: ID,
     pub health: Health,
     pub boundaries: Rect,
     pub rotation: Radians,
-    pub unit_type: UnitType,
+    pub entity_type: EntityType,
     pub player_id: ID,
 }
 
 pub struct Player {
-    pub id: u32,
+    pub id: ID,
     pub name: String,
 }
 
-pub struct Projectile {
-    pub boundaries: Rect,
-    pub rotation: Radians,
-    pub size: Size,
+#[derive(Debug, Copy, Clone)]
+pub struct Process {
+    pub id: ID,
+    pub entity_id: ID,
+    pub payload: ProcessPayload,
 }
 
-pub enum WorldProcess {
-    ActorMove {
-        id: ID,
-        actor_id: ID,
+#[derive(Debug, Copy, Clone)]
+pub enum ProcessPayload {
+    EntityMove {
         direction: Radians,
         velocity: Velocity,
     },
-    ActorShoot {
-        id: ID,
-        actor_id: ID,
-    },
-    ProjectileMove {
-        id: ID,
-        projectile_id: ID,
-        direction: Radians,
-        velocity: Velocity,
-    }
+    EntityShoot,
 }
 
 pub struct WorldState {
   pub new_id: ID,
   pub rect: Rect,
   pub players: HashMap<ID, Player>,
-  pub actors: HashMap<ID, Actor>,
-  pub processes: HashMap<ID, WorldProcess>,
+  pub entities: HashMap<ID, Entity>,
+  pub processes: HashMap<ID, Process>,
 }
+
+
+

@@ -172,10 +172,6 @@ function performActivity (world: World, activity: Activity): Diff[] {
   }
 }
 
-function findAffectedEntities (world: World, entity: Entity) {
-  return Object.values(world.entities).filter(x => intersects(entity, x));
-}
-
 function affect (world: World, entity: Entity): Diff[] {
   if (entity.type === "Projectile") {
     if (!intersects(entity, { size: world.size, location: { x: 0, y: 0 } })) {
@@ -192,4 +188,9 @@ function affect (world: World, entity: Entity): Diff[] {
       return actorBehaviour.affect(entity, otherEntity);
     }
   }).flat();
+}
+
+// PORTED
+function findAffectedEntities (world: World, entity: Entity) {
+  return Object.values(world.entities).filter(x => intersects(entity, x));
 }
