@@ -58,5 +58,9 @@ pub struct WorldState {
   pub processes: HashMap<ID, Process>,
 }
 
-
+// fn generate_new_id (world_state: &WorldState) -> ID {
+//     let new_id = world_state.new_id;
+//     world_state.new_id = world_state.new_id + 1;
+//     return new_id;
+// }
 

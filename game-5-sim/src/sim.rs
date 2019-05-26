@@ -1,5 +1,6 @@
+use std::collections::HashMap;
 use crate::world::GenNewID;
-use crate::world::{ WorldState, ID, Entity, Process };
+use crate::world::{ WorldState, ID, Entity, Process, ProcessPayload };
 use crate::geometry::{ Radians, intersects };
 use crate::diff::{ Diff };
 use crate::behaviours::Behaviour;
@@ -14,18 +15,50 @@ pub enum SimCommand {
     }
 }
 
-// fn generate_new_id (world_state: &WorldState) -> ID {
-//     let new_id = world_state.new_id;
-//     world_state.new_id = world_state.new_id + 1;
-//     return new_id;
-// }
+fn reduce_activities_by_command (mut processes: HashMap<ID, Process>, command: &SimCommand, gen_new_id: &GenNewID) -> HashMap<ID, Process> {
+  match command {
+    SimCommand::ActorMove { actor_id, direction } => {
+        let maybe_found_process: Option<&Process> = processes.values().find(|p| p.entity_id == *actor_id);
+        match maybe_found_process {
+            None => {
+                let new_process = Process { 
+                  id: gen_new_id(), 
+                  entity_id: *actor_id, 
+                  payload: ProcessPayload::EntityMove { 
+                    direction: *direction, 
+                    velocity: 2.0 
+                  } 
+                };
+                processes.insert(new_process.id, new_process);
+                return processes;
+            },
+            Some (process) => {
+                let updated_process = Process { 
+                  payload: ProcessPayload::EntityMove { 
+                    direction: *direction,
+                    velocity: 2.0
+                  }, 
+                  ..*process
+                };
+                processes.insert(updated_process.id, updated_process);
+                return processes;
+            }
+        }
+    },
+    SimCommand::ActorStop { actor_id } => {
+        processes.values().find(|p| p.entity_id == *actor_id).map(|p| p.id).map(|id| processes.remove(&id));
+        processes
+    }
+    
+  }
+}
 
-fn advanceProcess (world_state: &WorldState, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
+fn advance_process (world_state: &WorldState, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
   world_state.entities.get(&process.entity_id).unwrap().reduce(process, gen_new_id)
 }
 
 // TODO: maybe make immutable
-fn applyDiffToWorld (mut world_state: WorldState, diff: &Diff) -> WorldState {
+fn apply_diff_to_world (mut world_state: WorldState, diff: &Diff) -> WorldState {
   match diff {
     Diff::UpsertEntity (entity) => {
       world_state.entities.insert(entity.id, *entity);
@@ -49,9 +82,9 @@ fn applyDiffToWorld (mut world_state: WorldState, diff: &Diff) -> WorldState {
   return world_state;
 }
 
-fn affectByActor (world_state: &WorldState, actor: &Entity) -> Vec<Diff> {
+fn affect_by_actor (world_state: &WorldState, actor: &Entity) -> Vec<Diff> {
 
-  let affectedActors = world_state.entities.values().filter(|other| intersects(&other.boundaries, &actor.boundaries));
+  let affected_actors = world_state.entities.values().filter(|other| intersects(&other.boundaries, &actor.boundaries));
   //TODO
   return vec![];
   // TODO: let affectedProjectiles = world_state.projectiles.values().filter(|x| intersects(&x.boundaries, &actor.boundaries));
@@ -59,12 +92,12 @@ fn affectByActor (world_state: &WorldState, actor: &Entity) -> Vec<Diff> {
   //return affectedActors.map(|&affectedActor| actorBehaviour.affect(actor, affectedActor))
 }
 
-fn affectByProjectile (world_state: &WorldState, projectile: &Entity) -> Vec<Diff> {
+fn affect_by_projectile (world_state: &WorldState, projectile: &Entity) -> Vec<Diff> {
   if !intersects(&projectile.boundaries, &world_state.rect) {
       return vec![Diff::DeleteEntity(projectile.id)]
   }
 
-  let affectedActors = world_state.entities.values().filter(|other| intersects(&other.boundaries, &projectile.boundaries));
+  let affected_actors = world_state.entities.values().filter(|other| intersects(&other.boundaries, &projectile.boundaries));
 
   return vec![];
 }
