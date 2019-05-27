@@ -61,20 +61,17 @@ fn apply_diff_to_world (mut world_state: WorldState, diff: &Diff) -> WorldState 
   match diff {
     Diff::UpsertEntity (entity) => {
       world_state.entities.insert(entity.id, *entity);
-      ()
     },
     Diff::UpsertProcess (process) => {
       world_state.processes.insert(process.id, *process);
-      ()
     },
-    Diff::DeleteEntity (id) => {
-      world_state.entities.remove(id);
-      ()
-      // TODO: Object.values(world.activities).filter(x => x.entityId === diff.targetId).forEach(x => delete world.activities[x.id]);
+    Diff::DeleteEntity (entity_id) => {
+      world_state.entities.remove(entity_id);
+      let process_ids: Vec<ID> = world_state.processes.values().filter(|p| p.entity_id == *entity_id).map(|p| p.id).collect();
+      for id in process_ids { world_state.processes.remove(&id); }
     }
     Diff::DeleteProcess (id) => {
       world_state.processes.remove(id);
-      ()
     } 
   }
 
