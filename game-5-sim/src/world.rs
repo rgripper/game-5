@@ -12,7 +12,7 @@ pub struct Health {
     pub current: u32,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum EntityType {
     Human, 
     Monster,

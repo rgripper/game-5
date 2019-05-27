@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use crate::world::GenNewID;
-use crate::world::{ WorldState, ID, Entity, Process, ProcessPayload };
+use crate::world::{ WorldState, ID, Entity, Process, ProcessPayload, EntityType, GenNewID };
 use crate::geometry::{ Radians, intersects };
 use crate::diff::{ Diff };
 use crate::behaviours::Behaviour;
@@ -83,13 +82,8 @@ fn apply_diff_to_world (mut world_state: WorldState, diff: &Diff) -> WorldState 
 }
 
 fn affect_by_actor (world_state: &WorldState, actor: &Entity) -> Vec<Diff> {
-
-  let affected_actors = world_state.entities.values().filter(|other| intersects(&other.boundaries, &actor.boundaries));
-  //TODO
-  return vec![];
-  // TODO: let affectedProjectiles = world_state.projectiles.values().filter(|x| intersects(&x.boundaries, &actor.boundaries));
-
-  //return affectedActors.map(|&affectedActor| actorBehaviour.affect(actor, affectedActor))
+  let affected_entities = world_state.entities.values().filter(|other| intersects(&other.boundaries, &actor.boundaries));
+  return affected_entities.map(|other| actor.affect(&other)).flatten().collect();
 }
 
 fn affect_by_projectile (world_state: &WorldState, projectile: &Entity) -> Vec<Diff> {
@@ -97,28 +91,9 @@ fn affect_by_projectile (world_state: &WorldState, projectile: &Entity) -> Vec<D
       return vec![Diff::DeleteEntity(projectile.id)]
   }
 
-  let affected_actors = world_state.entities.values().filter(|other| intersects(&other.boundaries, &projectile.boundaries));
-
-  return vec![];
+  let affected_non_projectiles = world_state.entities.values().filter(|other| other.entity_type != EntityType::Projectile && intersects(&other.boundaries, &projectile.boundaries));
+  return affected_non_projectiles.map(|other| projectile.affect(&other)).flatten().collect();
 }
-
-// fn affect (world: &World, entity: Entity): Diff[] {
-//   if (entity.type === "Projectile") {
-//     if (!intersects(entity, { size: world.size, location: { x: 0, y: 0 } })) {
-//       return [{ type: "Delete", targetType: "Entity", targetId: entity.id }]
-//     }
-//   }
-
-//   return findAffectedEntities(world, entity).map(otherEntity => {
-//     if (entity.type === "Projectile") {
-//       if (otherEntity.type === "Projectile") return [];// TODO: its a hack
-//       return projectileBehaviour.affect(entity, otherEntity);
-//     }
-//     else {
-//       return actorBehaviour.affect(entity, otherEntity);
-//     }
-//   }).flat();
-// }
 
 // pub fn findAffectedActors (actors: impl Iterator<Item=Actor>, actor: &Actor) -> impl Iterator<Item = Actor> {
 //     return actors.filter(|x| intersects(&x.boundaries, &actor.boundaries));
