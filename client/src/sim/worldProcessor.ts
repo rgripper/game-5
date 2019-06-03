@@ -85,34 +85,19 @@ export type World = {
   players: ObjectMap<Player>;
 }
 
-export type TickOutcome = { world: World; diffs: Diff[] };
+export type SimUpdate = { world: World; diffs: Diff[] };
 
-export function reduceWorldOnTick ({ world }: TickOutcome, clientCommands: ClientCommand[]): TickOutcome {
+export function reduceWorldOnTick ({ world }: SimUpdate, clientCommands: ClientCommand[]): SimUpdate {
+  const prevActivities = Object.values(world.activities);
+  const simUpdate1 = prevActivities.reduce((simUpdate, item) => performActivity(simUpdate.world, item), { world, diffs: [] as Diff[] })
   
-  const activities = clientCommands.reduce(reduceActivitiesByCommand, world.activities);
-
+  const nextActivities = clientCommands.reduce(reduceActivitiesByCommand, simUpdate1.world.activities);
+  const activityDiffs = Object.values(nextActivities).map(target => ({ type: "Upsert", targetType: "Activity", target }) as Diff);
+  activityDiffs.forEach(diff => applyDiffToWorld(world, diff));
+  
+  const allDiffs = [...simUpdate1.diffs, ...activityDiffs];
   //const entityDiffs = lobbyCommands.map(x => ({ target: { location: { x: 25, y: 25 }, id: 1 }, type: "Upsert", targetType: "Entity" }) as EntityDiff);
-  const worldWithUpdatedActivities = { ...world, activities };
-  const seed: TickOutcome = { world: worldWithUpdatedActivities, diffs: [] };
-  
-  const activatedEntities = Object.values(activities).map(x => world.entities[x.entityId]); // TODO: filter out by activities
-
-  const affectsOutcome = activatedEntities.reduce((outcome, entity) => {
-    const nextDiffs = affect(outcome.world, entity);
-    return applyAllDiffsToWorld(outcome, nextDiffs);
-  }, seed);
-
-  return Object.values(activities).reduce((outcome, activity) => {
-    const nextDiffs = performActivity(outcome.world, activity);
-    return applyAllDiffsToWorld(outcome, nextDiffs);
-  }, affectsOutcome);
-}
-
-function applyAllDiffsToWorld ({ world, diffs }: TickOutcome, nextDiffs: Diff[]) {
-  return {
-    world: nextDiffs.reduce(applyDiffToWorld, world),
-    diffs: [...diffs, ...nextDiffs]
-  }
+  return { world, diffs: allDiffs };
 }
 
 function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity: { isOn, ...otherProps } }: ClientCommand): ObjectMap<Activity> {
@@ -135,7 +120,7 @@ function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity:
 }
 
 // TODO: maybe make immutable
-function applyDiffToWorld (world: World, diff: Diff): World {
+function applyDiffToWorld (world: World, diff: Diff): void {
   switch (diff.type) {
     case "Upsert": {
       if (diff.targetType == 'Entity') {
@@ -157,24 +142,39 @@ function applyDiffToWorld (world: World, diff: Diff): World {
       break;
     }
   }
-
-  return world;
 }
 
-function performActivity (world: World, activity: Activity): Diff[] {
+function performActivity (world: World, activity: Activity): SimUpdate {
   if (activity.type === "ProjectileMove") { // TODO: review this magic into a rule
     const projectile = world.entities[activity.entityId] as Projectile; // TODO: remove type casting
-    return projectileBehaviour.reduce(projectile, activity);
+    
+    const diffs = projectileBehaviour.reduce(projectile, activity);
+    diffs.forEach(diff => applyDiffToWorld(world, diff));
+    const diffs2 = affect(world, projectile);
+
+    return {
+      world,
+      diffs: [...diffs, ...diffs2]
+    }
   }
   else {
     const actor = world.entities[activity.entityId] as Actor; // TODO: remove type casting
-    return actorBehaviour.reduce(actor, activity);
+
+    const diffs = actorBehaviour.reduce(actor, activity);
+    diffs.forEach(diff => applyDiffToWorld(world, diff));
+    const diffs2 = affect(world, actor);
+
+    return {
+      world,
+      diffs: [...diffs, ...diffs2]
+    }
   }
 }
 
 function affect (world: World, entity: Entity): Diff[] {
   if (entity.type === "Projectile") {
     if (!intersects(entity, { size: world.size, location: { x: 0, y: 0 } })) {
+      delete world.entities[entity.id];
       return [{ type: "Delete", targetType: "Entity", targetId: entity.id }]
     }
   }
@@ -193,4 +193,8 @@ function affect (world: World, entity: Entity): Diff[] {
 // PORTED
 function findAffectedEntities (world: World, entity: Entity) {
   return Object.values(world.entities).filter(x => intersects(entity, x));
+}
+
+function findActivatedEntities (world: World, activities: Activity[]) {
+  return activities.map(x => world.entities[x.entityId]);
 }

@@ -1,42 +1,31 @@
+use crate::physics::Velocity;
+use crate::geometry::Radians;
 use crate::world::GenNewID;
 use crate::physics::move_point;
 use crate::geometry::{Point, Size, Rect};
 use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
 use crate::diff::{Diff};
 
-
-
-pub trait Behaviour {
-    fn reduce(&self, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff>;
-    fn affect(&self, other: &Entity) -> Vec<Diff>;
-}
-
-impl Behaviour for Entity {
-    fn reduce(&self, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
-        match process.payload {
-            ProcessPayload::EntityMove { velocity, direction } => {
-                let updatedEntity = Entity {
-                    id: self.id,
-                    boundaries: Rect { 
-                        size: self.boundaries.size,
-                        top_left: move_point(&self.boundaries.top_left, &velocity, &direction)
-                    },
-                    ..*self // TODO: do a real fix
-                };
-
-                vec![Diff::UpsertEntity(updatedEntity)]
-            },
-            ProcessPayload::EntityShoot { .. } => shootFrom(self, gen_new_id),
-            _ => panic!("Unexpected process")
-        }
-    }
-    
-    fn affect(&self, other: &Entity) -> Vec<Diff> {
-        vec![] // nothing for now
+pub fn update_entity_by_process_payload(entity: &Entity, process_payload: &ProcessPayload, gen_new_id: &GenNewID) -> Vec<Diff> {
+    match process_payload {
+        ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, velocity, direction, gen_new_id),
+        ProcessPayload::EntityShoot { .. } => shoot_from(entity, gen_new_id)
     }
 }
 
-fn shootFrom (owner: &Entity, gen_new_id: &GenNewID) -> Vec<Diff> {
+fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians, gen_new_id: &GenNewID) -> Vec<Diff> {
+    let updated_entity = Entity {
+        id: entity.id,
+        boundaries: Rect { 
+            size: entity.boundaries.size,
+            top_left: move_point(&entity.boundaries.top_left, velocity, direction)
+        },
+        ..*entity // TODO: do a real fix
+    };
+    vec![Diff::UpsertEntity(updated_entity)]
+}
+
+fn shoot_from (owner: &Entity, gen_new_id: &GenNewID) -> Vec<Diff> {
     let projectile = Entity { 
         id: gen_new_id(), 
         boundaries: Rect {  // TODO: generate shooting point

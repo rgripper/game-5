@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import * as PIXI from 'pixi.js';
-import { reduceWorldOnTick, TickOutcome, ClientCommand, Actor } from './sim/worldProcessor';
+import { reduceWorldOnTick, SimUpdate, ClientCommand, Actor } from './sim/worldProcessor';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
@@ -35,7 +35,7 @@ function App () {
         [humanActor.id.toString()]: humanActor
       })
 
-      const initialOutcome: TickOutcome = {
+      const initialOutcome: SimUpdate = {
         diffs: [],
         world: {
           size: { width: 500, height: 500 },
@@ -59,8 +59,8 @@ function App () {
       const batchCommandsPerTick = bufferTime<ClientCommand>(10);
       // todo: something about it needs changing
       const runTickPerCommandBatch = scan(reduceWorldOnTick, initialOutcome);
-      const batchTicksPerFrame = buffer<TickOutcome>(frames$);
-      const collectDiffsFromTicks = map<TickOutcome[], Diff[]>(outcomes => outcomes.map(x => x.diffs).flat());
+      const batchTicksPerFrame = buffer<SimUpdate>(frames$);
+      const collectDiffsFromTicks = map<SimUpdate[], Diff[]>(outcomes => outcomes.map(x => x.diffs).flat());
       const processDiffs = tap<Diff[]>(diffs => renderDiffs(diffs, app));
       
       const subscription = commands$.pipe(
