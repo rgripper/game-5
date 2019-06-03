@@ -20,14 +20,10 @@ struct SimUpdate {
 
 // last_sim_update = { world }
 fn reduce_world_on_tick (world_state: &WorldState, sim_commands: &Vec<SimCommand>, gen_new_id: &GenNewID) -> Vec<Diff> {
-  let diffs1 = last_sim_update.processes.values().reduce(|diffs, item| (sim_update.world, item));
-  
-  let nextActivities = sim_commands.map(|c| produce_diff_from_command(world_state, c, gen_new_id));
-  let activityDiffs = Object.values(nextActivities).map(target => ({ type: "Upsert", targetType: "Activity", target }) as Diff);
-  activityDiffs.forEach(diff => applyDiffToWorld(world, diff));
-  
-  let allDiffs = [...simUpdate1.diffs, ...activityDiffs];
-  return { world, diffs: allDiffs };
+  let diffs1 = world_state.processes.values().map(|process| advance_process_apple(world_state, process, gen_new_id));
+  let diffs2 = world_state.processes.values().map(|process| advance_process_banana(world_state, process, gen_new_id));
+
+  let diffs3 = sim_commands.iter().map(|c| produce_diff_from_command(world_state, c, gen_new_id));
 }
 
 fn advance_process_apple (world_state: &WorldState, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
