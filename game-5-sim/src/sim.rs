@@ -19,21 +19,31 @@ struct SimUpdate {
 }
 
 // last_sim_update = { world }
-fn reduce_world_on_tick (world_state: &WorldState, sim_commands: &Vec<SimCommand>, gen_new_id: &GenNewID) -> Vec<Diff> {
-  let diffs1 = world_state.processes.values().map(|process| advance_process_apple(world_state, process, gen_new_id));
-  let diffs2 = world_state.processes.values().map(|process| advance_process_banana(world_state, process, gen_new_id));
+fn reduce_world_on_tick (mut world_state: WorldState, sim_commands: &Vec<SimCommand>, gen_new_id: &GenNewID) -> Vec<Diff> {
+  let mut diffs = vec![];
+  world_state.processes.values().map(|process| {
+    let entity = world_state.entities.get(&process.entity_id).unwrap();
+    let diffsA = update_entity_by_process_payload(entity, &process.payload, gen_new_id);
+    for diff in diffsA { 
+      apply_diff_to_world(*world_state, &diff);
+      diffs.push(diff);
+    }
+    let diffsB = affect_by_entity(&world_state, entity);
+    for diff in diffsB { 
+      apply_diff_to_world(*world_state, &diff); 
+      diffs.push(diff);
+    }
+  });
 
-  let diffs3 = sim_commands.iter().map(|c| produce_diff_from_command(world_state, c, gen_new_id));
-}
+  for c in sim_commands {
+    let diffsA = produce_diff_from_command(&world_state, c, gen_new_id);
+    for diff in diffsA { 
+      apply_diff_to_world(world_state, &diff);
+      diffs.push(diff);
+    };
+  };
 
-fn advance_process_apple (world_state: &WorldState, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
-  let entity = world_state.entities.get(&process.entity_id).unwrap();
-  update_entity_by_process_payload(entity, &process.payload, gen_new_id)
-}
-
-fn advance_process_banana (world_state: &WorldState, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
-  let entity = world_state.entities.get(&process.entity_id).unwrap();
-  affect_by_entity(world_state, entity)
+  diffs
 }
 
 // fn advance_process (world_state: &WorldState, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
