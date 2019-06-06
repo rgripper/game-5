@@ -13,35 +13,34 @@ pub enum SimCommand {
     }
 }
 
-struct SimUpdate { 
-  world_state: WorldState,
-  diffs: Vec<Diff>,
-}
-
 // last_sim_update = { world }
-fn reduce_world_on_tick (mut world_state: WorldState, sim_commands: &Vec<SimCommand>, gen_new_id: &GenNewID) -> Vec<Diff> {
+pub fn reduce_world_on_tick (world_state: &mut WorldState, sim_commands: &Vec<SimCommand>, gen_new_id: &GenNewID) -> Vec<Diff> {
   let mut diffs = vec![];
-  world_state.processes.values().map(|process| {
-    let entity = world_state.entities.get(&process.entity_id).unwrap();
-    let diffsA = update_entity_by_process_payload(entity, &process.payload, gen_new_id);
-    for diff in diffsA { 
-      apply_diff_to_world(*world_state, &diff);
-      diffs.push(diff);
-    }
-    let diffsB = affect_by_entity(&world_state, entity);
-    for diff in diffsB { 
-      apply_diff_to_world(*world_state, &diff); 
-      diffs.push(diff);
-    }
-  });
+  let pairs: Vec<_> = world_state.processes.values().map(|process| (process.id, process.entity_id)).collect();
+  
+  for (process_id, entity_id) in pairs {
+    let process = world_state.processes.get(&process_id).unwrap();
 
-  for c in sim_commands {
-    let diffsA = produce_diff_from_command(&world_state, c, gen_new_id);
-    for diff in diffsA { 
+    let diffs_a = update_entity_by_process_payload(world_state.entities.get(&entity_id).unwrap(), &process.payload, gen_new_id);
+    for diff in diffs_a { 
       apply_diff_to_world(world_state, &diff);
       diffs.push(diff);
-    };
-  };
+    }
+
+    let diffs_b = affect_by_entity(world_state, world_state.entities.get(&entity_id).unwrap());
+    for diff in diffs_b { 
+      apply_diff_to_world(world_state, &diff); 
+      diffs.push(diff);
+    }
+  }
+  
+  for c in sim_commands {
+    let diffs_a = produce_diff_from_command(world_state, c, gen_new_id);
+    for diff in diffs_a { 
+      apply_diff_to_world(world_state, &diff);
+      diffs.push(diff);
+    }
+  }
 
   diffs
 }
@@ -97,7 +96,7 @@ fn produce_diff_from_command (world_state: &WorldState, command: &SimCommand, ge
 }
 
 // TODO: maybe make immutable
-fn apply_diff_to_world (mut world_state: WorldState, diff: &Diff) {
+fn apply_diff_to_world (world_state: &mut WorldState, diff: &Diff) {
   match diff {
     Diff::UpsertEntity (entity) => {
       world_state.entities.insert(entity.id, *entity);
