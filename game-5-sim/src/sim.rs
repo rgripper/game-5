@@ -1,4 +1,4 @@
-use crate::behaviours::{update_entity_by_process_payload};
+use crate::behaviours::{copy_update_entity_by_process_payload};
 use crate::world::{ WorldState, ID, Entity, Process, ProcessPayload, EntityType, GenNewID };
 use crate::geometry::{ Radians, intersects };
 use crate::diff::{ Diff };
@@ -14,22 +14,32 @@ pub enum SimCommand {
 }
 
 // last_sim_update = { world }
-pub fn reduce_world_on_tick (world_state: &mut WorldState, sim_commands: &Vec<SimCommand>, gen_new_id: &GenNewID) -> Vec<Diff> {
+pub fn update_world (world_state: &mut WorldState, sim_commands: &Vec<SimCommand>, gen_new_id: &GenNewID) -> Vec<Diff> {
   let mut diffs = vec![];
   let pairs: Vec<_> = world_state.processes.values().map(|process| (process.id, process.entity_id)).collect();
   
   for (process_id, entity_id) in pairs {
-    let process = world_state.processes.get(&process_id).unwrap();
+    // 
+    let process_diffs = world_state.entities
+      .get(&entity_id)
+      .map(|entity| {
+        let process = world_state.processes.get(&process_id).unwrap();
+        copy_update_entity_by_process_payload(entity, &process.payload, gen_new_id)
+      })
+      .unwrap_or_else(|| vec![]);
 
-    let diffs_a = update_entity_by_process_payload(world_state.entities.get(&entity_id).unwrap(), &process.payload, gen_new_id);
-    for diff in diffs_a { 
-      apply_diff_to_world(world_state, &diff);
+    for diff in process_diffs {
+      apply_diff_to_world(world_state, &diff); // apply diffs output by application of process to its entity
       diffs.push(diff);
     }
 
-    let diffs_b = affect_by_entity(world_state, world_state.entities.get(&entity_id).unwrap());
-    for diff in diffs_b { 
-      apply_diff_to_world(world_state, &diff); 
+    let entity_affect_diffs = world_state.entities
+      .get(&entity_id)
+      .map(|entity| affect_by_entity(world_state, entity))
+      .unwrap_or_else(|| vec![]);
+
+    for diff in entity_affect_diffs { 
+      apply_diff_to_world(world_state, &diff);  // apply diffs output by application of entity to other entities in range
       diffs.push(diff);
     }
   }

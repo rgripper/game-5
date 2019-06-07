@@ -6,7 +6,8 @@ use crate::geometry::{Point, Size, Rect};
 use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
 use crate::diff::{Diff};
 
-pub fn update_entity_by_process_payload(entity: &Entity, process_payload: &ProcessPayload, gen_new_id: &GenNewID) -> Vec<Diff> {
+// TODO: rename  'update'
+pub fn copy_update_entity_by_process_payload(entity: &Entity, process_payload: &ProcessPayload, gen_new_id: &GenNewID) -> Vec<Diff> {
     match process_payload {
         ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, velocity, direction, gen_new_id),
         ProcessPayload::EntityShoot { .. } => shoot_from(entity, gen_new_id)
