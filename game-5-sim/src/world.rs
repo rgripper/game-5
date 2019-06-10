@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use crate::geometry::{Rect, Radians};
 use crate::physics::{Velocity};
+use wasm_bindgen::prelude::*;
 
 pub type ID = i32;
 
-pub type GenNewID = fn () -> ID;
+pub type GenNewID = Fn() -> ID;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Health {
@@ -50,17 +51,35 @@ pub enum ProcessPayload {
     EntityShoot,
 }
 
-pub struct WorldState {
-  pub new_id: ID,
-  pub rect: Rect,
-  pub players: HashMap<ID, Player>,
-  pub entities: HashMap<ID, Entity>,
-  pub processes: HashMap<ID, Process>,
+impl ProcessPayload {
+    pub fn is_entity_move (&self) -> bool {
+        match self {
+            EntityMove => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_entity_shoot (&self) -> bool {
+        match self {
+            EntityShoot => true,
+            _ => false,
+        }
+    }
 }
 
-// fn generate_new_id (world_state: &WorldState) -> ID {
-//     let new_id = world_state.new_id;
-//     world_state.new_id = world_state.new_id + 1;
-//     return new_id;
-// }
+pub struct WorldState {
+    pub new_id: ID,
+    pub rect: Rect,
+    pub players: HashMap<ID, Player>,
+    pub entities: HashMap<ID, Entity>,
+    pub processes: HashMap<ID, Process>,
+}
+
+impl WorldState{
+    pub fn gen_new_id (mut self) -> ID {
+        let new_id = self.new_id;
+        self.new_id = self.new_id + 1;
+        return new_id;
+    }
+}
 

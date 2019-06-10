@@ -1,20 +1,21 @@
+use crate::world::ID;
 use crate::physics::Velocity;
 use crate::geometry::Radians;
 use crate::world::GenNewID;
 use crate::physics::move_point;
 use crate::geometry::{Point, Size, Rect};
 use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
-use crate::diff::{Diff};
+use crate::sim::{Diff};
 
 // TODO: rename  'update'
 pub fn copy_update_entity_by_process_payload(entity: &Entity, process_payload: &ProcessPayload, gen_new_id: &GenNewID) -> Vec<Diff> {
     match process_payload {
-        ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, velocity, direction, gen_new_id),
-        ProcessPayload::EntityShoot { .. } => shoot_from(entity, gen_new_id)
+        ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, velocity, direction),
+        ProcessPayload::EntityShoot { .. } => shoot_from(entity, gen_new_id(), gen_new_id())
     }
 }
 
-fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians, gen_new_id: &GenNewID) -> Vec<Diff> {
+fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians) -> Vec<Diff> {
     let updated_entity = Entity {
         id: entity.id,
         boundaries: Rect { 
@@ -26,9 +27,9 @@ fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians, gen_n
     vec![Diff::UpsertEntity(updated_entity)]
 }
 
-fn shoot_from (owner: &Entity, gen_new_id: &GenNewID) -> Vec<Diff> {
+fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> Vec<Diff> {
     let projectile = Entity { 
-        id: gen_new_id(), 
+        id: new_projectile_id, 
         boundaries: Rect {  // TODO: generate shooting point
             size: Size { width: 4, height: 2 },
             top_left: Point { 
@@ -46,7 +47,7 @@ fn shoot_from (owner: &Entity, gen_new_id: &GenNewID) -> Vec<Diff> {
     };
 
     let projectile_activity = Process { 
-        id: gen_new_id(),
+        id: new_activity_id,
         entity_id: projectile.id,
         payload: ProcessPayload::EntityShoot,
     };
