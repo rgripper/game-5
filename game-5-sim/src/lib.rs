@@ -7,6 +7,7 @@ mod sim;
 mod behaviours;
 mod interop;
 
+use crate::interop::SimInterop;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -21,9 +22,6 @@ extern {
 }
 
 #[wasm_bindgen]
-pub fn greet() {
-
-
-
-    alert("Hello, game-5-sim!");
+pub fn create_sim() -> SimInterop {
+    SimInterop::new()
 }

@@ -25,10 +25,10 @@ pub struct ActorId {
 #[wasm_bindgen]
 #[derive(Copy, Clone)]
 pub struct JS_SimCommand {
-    pub ActorMove: Option<ActorMove>,
-    pub ActorMoveStop: Option<ActorId>,
-    pub ActorShoot: Option<ActorId>,
-    pub ActorShootStop: Option<ActorId>,
+    pub actor_move: Option<ActorMove>,
+    pub actor_move_stop: Option<ActorId>,
+    pub actor_shoot: Option<ActorId>,
+    pub actor_shoot_stop: Option<ActorId>,
 }
 
 #[wasm_bindgen]
@@ -68,13 +68,13 @@ impl SimInterop {
     ) -> Vec<JS_Diff> {
         let sim_commands: Vec<_> = js_sim_commands
             .iter()
-            .map(|c| match &c.ActorMove {
+            .map(|c| match &c.actor_move {
                 Some(actor_move) => ActorCommand::Move(actor_move.actor_id, Some(ActorMovePayload { direction: actor_move.direction })),
-                None => match &c.ActorMoveStop {
+                None => match &c.actor_move_stop {
                     Some(actor_move_stop) => ActorCommand::Move(actor_move_stop.actor_id, None),
-                    None => match &c.ActorShoot {
+                    None => match &c.actor_shoot {
                         Some(actor_shoot) => ActorCommand::Shoot(actor_shoot.actor_id, None),
-                        None => match &c.ActorShootStop {
+                        None => match &c.actor_shoot_stop {
                             Some(actor_shoot_stop) => ActorCommand::Shoot(actor_shoot_stop.actor_id, None),
                             None => panic!("Missing command data")  
                         }
