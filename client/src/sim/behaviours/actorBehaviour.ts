@@ -1,6 +1,7 @@
 import { Actor, Activity, Entity, Projectile, AxisState, EntityBehaviour } from "../worldProcessor";
 import { Diff } from "../Diff";
 import { getNewId } from "../Identity";
+import { move } from "../Physics";
 
 export const actorBehaviour: EntityBehaviour<Actor> = {
   reduce(actor: Actor, activity: Activity): Diff[] {
@@ -8,13 +9,8 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
       case "CharacterMove": {
         const updatedActor = { 
           ...actor, 
-          location: { 
-            ...actor.location, 
-            x: activity.horizontal !== undefined ? (actor.location.x + 2 * (activity.horizontal === AxisState.Negative ? -1 : 1)) : actor.location.x,
-            y: activity.vertical !== undefined ? (actor.location.y + 2 * (activity.vertical === AxisState.Negative ? -1 : 1)) : actor.location.y
-          } 
+          location: move(actor.location, 2, activity.direction) 
         };
-
         return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
       }
       case "CharacterShoot": return shoot(actor);

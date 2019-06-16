@@ -1,10 +1,8 @@
-import { Point } from "./Geometry";
+import { Point, Radians } from "./Geometry";
 
-export function getRadians(angle: number): number {
-  return (angle * Math.PI)/ 180;
-}
+export type Velocity = number;
 
-export function move(location: Point, velocity: number, rotation: number): Point {
+export function move(location: Point, velocity: Velocity, rotation: Radians): Point {
   return {
     x: location.x + velocity * Math.cos(rotation),
     y: location.y + velocity * Math.sin(rotation)

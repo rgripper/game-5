@@ -1,7 +1,12 @@
+export type Radians = number;
 
 export type Point = {
     x: number; // from left to right
     y: number; // from top to bottom
+}
+
+export function getRadians(angle: number): Radians {
+  return (angle * Math.PI)/ 180;
 }
 
 export type Size = { width: number; height: number; }

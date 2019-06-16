@@ -1,6 +1,7 @@
 import { CharacterControlCommand, AxisState } from "../sim/worldProcessor";
 import { map, distinctUntilChanged, scan } from "rxjs/operators";
 import { Observable, merge } from "rxjs";
+import { Radians, getRadians } from "../sim/Geometry";
 
 type AxisTracker = { active?: AxisState; suppressed?: AxisState; };
 
@@ -18,9 +19,16 @@ type MapKeysToCommandsParams = {
   keyDowns$: Observable<KeyboardEvent>; 
   playerId: number;
   entityId: number;
-} 
+}
 
-export function mapKeysToCommands ({ keyUps$, keyDowns$, playerId, entityId }: MapKeysToCommandsParams) {
+export type MovementKeys = {
+  forward: string,
+  back: string,
+  left: string,
+  right: string
+};
+
+export function mapMovementKeysToCommands (movementKeys: MovementKeys, { keyUps$, keyDowns$, playerId, entityId }: MapKeysToCommandsParams) {
   const keyEvents$ = merge(
     keyUps$.pipe(map(event => ({ event, reducer: removeAxisState }))),
     keyDowns$.pipe(map(event => ({ event, reducer: setAxisState })))
@@ -28,19 +36,19 @@ export function mapKeysToCommands ({ keyUps$, keyDowns$, playerId, entityId }: M
 
   return keyEvents$.pipe(
     scan<{ event: KeyboardEvent; reducer: AxisTrackerReducer }, MovementTracker>(
-      (tracker, { event, reducer }) => reduceTrackerWithKey(tracker, event.key, reducer), initialMovementTracker
+      (tracker, { event, reducer }) => reduceTrackerWithKey(movementKeys, tracker, event.key, reducer), initialMovementTracker
     ),
     distinctUntilChanged(),
     map(movementTracker =>  mapKeyboard(movementTracker, playerId, entityId))
   );
 }
 
-function reduceTrackerWithKey (movementTracker: MovementTracker, key: string, axisStateTrackerReducer: AxisTrackerReducer): MovementTracker {
+function reduceTrackerWithKey (movementKeys: MovementKeys, movementTracker: MovementTracker, key: string, axisStateTrackerReducer: AxisTrackerReducer): MovementTracker {
   switch (key) {
-    case 's': return { ...movementTracker, vertical: axisStateTrackerReducer(movementTracker.vertical, AxisState.Positive) };
-    case 'w': return { ...movementTracker, vertical: axisStateTrackerReducer(movementTracker.vertical, AxisState.Negative) };
-    case 'd': return { ...movementTracker, horizontal: axisStateTrackerReducer(movementTracker.horizontal, AxisState.Positive) };
-    case 'a': return { ...movementTracker, horizontal: axisStateTrackerReducer(movementTracker.horizontal, AxisState.Negative) };
+    case movementKeys.back: return { ...movementTracker, vertical: axisStateTrackerReducer(movementTracker.vertical, AxisState.Positive) };
+    case movementKeys.forward: return { ...movementTracker, vertical: axisStateTrackerReducer(movementTracker.vertical, AxisState.Negative) };
+    case movementKeys.right: return { ...movementTracker, horizontal: axisStateTrackerReducer(movementTracker.horizontal, AxisState.Positive) };
+    case movementKeys.left: return { ...movementTracker, horizontal: axisStateTrackerReducer(movementTracker.horizontal, AxisState.Negative) };
     default: return movementTracker;
   }
 }
@@ -70,17 +78,67 @@ function removeAxisState (axisTracker: AxisTracker, stateToRemove: AxisState): A
   }
 }
 
+function getDirection(movementTracker: MovementTracker): number {
+
+  // right
+  if (movementTracker.vertical.active === undefined && movementTracker.horizontal.active === AxisState.Positive) {
+    return 0;
+  }
+
+  // top right
+  if (movementTracker.vertical.active === AxisState.Positive && movementTracker.horizontal.active === AxisState.Positive) {
+    return 45;
+  }
+
+  // top
+  if (movementTracker.vertical.active === AxisState.Positive && movementTracker.horizontal.active === undefined) {
+    return 90;
+  }
+
+  // top left
+  if (movementTracker.vertical.active === AxisState.Positive && movementTracker.horizontal.active === AxisState.Negative) {
+    return 135;
+  }
+  
+  // left
+  if (movementTracker.vertical.active === undefined && movementTracker.horizontal.active === AxisState.Negative) {
+    return 180;
+  }
+
+  // bottom left
+  if (movementTracker.vertical.active === AxisState.Negative && movementTracker.horizontal.active === AxisState.Negative) {
+    return 225;
+  }
+
+  // bottom
+  if (movementTracker.vertical.active === AxisState.Negative && movementTracker.horizontal.active === undefined) {
+    return 270;
+  }
+
+  // bottom right
+  if (movementTracker.vertical.active === AxisState.Negative && movementTracker.horizontal.active === AxisState.Positive) {
+    return 315;
+  }
+
+  throw new Error('Must not get here');
+}
+
 function mapKeyboard(movementTracker: MovementTracker, playerId: number, entityId: number): CharacterControlCommand {
   const isOn = !!(movementTracker.vertical.active !== undefined || movementTracker.horizontal.active !== undefined);
+  console.log({ isOn, entityId });
   return {
     type: "CharacterControlCommand",
-    activity: {
-      type: "CharacterMove", 
-      playerId,  
-      entityId,
-      isOn,
-      vertical: movementTracker.vertical.active,
-      horizontal: movementTracker.horizontal.active
-    }
+    activity: isOn 
+      ? {
+        type: "CharacterMove",  
+        entityId,
+        isOn,
+        direction: getRadians(getDirection(movementTracker))
+      }
+      : {
+        type: "CharacterMove",  
+        entityId,
+        isOn
+      }
   }
 }

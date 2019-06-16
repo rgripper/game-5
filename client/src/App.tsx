@@ -6,15 +6,16 @@ import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
 import { Observable, Subscriber } from 'rxjs';
 import { Diff } from './sim/Diff';
-import { getRadians } from './sim/Physics';
+import { getRadians } from './sim/Geometry';
 import { getNewId } from './sim/Identity';
 
 function App () {
 
     useEffect(() => {
-      import("../../game-5-sim/crate/pkg").then(({ greet }) => {
-        greet();
-      });
+      // import("../../game-5-sim/pkg").then(({ create_sim }) => {
+      //   const sim = create_sim();
+      //   sim.free();
+      // });
       
 
       const app = new PIXI.Application({backgroundColor : 0xD500F9, width: 800, height: 600});
@@ -50,7 +51,14 @@ function App () {
 
       renderInitialWorld(initialOutcome.world, app);
 
-      const commands$ = mapEventsToCommands(document, humanActor.playerId, humanActor.id);
+      const movementKeys = {
+        forward: 'w',
+        back: 's',
+        left: 'a',
+        right: 'd'
+      }
+
+      const commands$ = mapEventsToCommands(document, movementKeys, humanActor.playerId, humanActor.id);
 
       const frames$: Observable<void> = Observable.create((subscriber: Subscriber<void>) => {
         app.ticker.add(() => subscriber.next())

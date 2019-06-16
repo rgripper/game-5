@@ -32,7 +32,7 @@ function createDisplayObject (entity: Entity, app: PIXI.Application, image: stri
   const container = new PIXI.Container();
 
   container.addChild(sprite);
-  //container.addChild(collisionRect);
+  container.addChild(collisionRect);
 
   app.stage.addChild(container);
 

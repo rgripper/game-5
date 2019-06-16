@@ -1,7 +1,7 @@
 import { Diff } from "./Diff";
 import { actorBehaviour } from "./behaviours/actorBehaviour";
 import { projectileBehaviour } from "./behaviours/projectileBehaviour";
-import { Size, intersects, Point } from "./Geometry";
+import { Size, intersects, Point, Radians } from "./Geometry";
 import { getNewId } from "./Identity";
 
 export interface EntityBehaviour<TEntity extends Entity> {
@@ -38,15 +38,14 @@ type ActivityBase = { id: number }
 
 export enum AxisState { Negative, Positive }
 
-type CharacterActivity = ({
+type CharacterMove = {
   type: "CharacterMove";
-  vertical?: AxisState;
-  horizontal?: AxisState;
-} | {
+  direction: Radians;
+  entityId: Actor["id"];
+}
+
+type CharacterShoot = {
   type: "CharacterShoot";
-})
-& {
-  playerId: number; // TODO: ensure player access beforehand and not pass
   entityId: Actor["id"];
 }
 
@@ -59,11 +58,13 @@ type ProjectileActivity = {
   entityId: Projectile["id"];
 }
 
-export type Activity = ActivityBase & (CharacterActivity | ProjectileActivity)
+export type Activity = ActivityBase & (CharacterMove | CharacterShoot | ProjectileActivity)
 
 export type CharacterControlCommand = {
   type: "CharacterControlCommand";
-  activity: CharacterActivity & { isOn: boolean; };
+  activity: 
+    | ({ type: "CharacterMove"; entityId: Actor["id"]; } & ({ isOn: true; direction: Radians; } | { isOn: false; }))
+    | ({ type: "CharacterShoot"; entityId: Actor["id"]; } & ({ isOn: true; } | { isOn: false; }));
 }
 
 export type ClientCommand = CharacterControlCommand
@@ -91,8 +92,7 @@ export function reduceWorldOnTick ({ world }: SimUpdate, clientCommands: ClientC
   const prevActivities = Object.values(world.activities);
   const simUpdate1 = prevActivities.reduce((simUpdate, item) => performActivity(simUpdate.world, item), { world, diffs: [] as Diff[] })
   
-  const nextActivities = clientCommands.reduce(reduceActivitiesByCommand, simUpdate1.world.activities);
-  const activityDiffs = Object.values(nextActivities).map(target => ({ type: "Upsert", targetType: "Activity", target }) as Diff);
+  const activityDiffs = clientCommands.map(c => reduceActivitiesByCommand(simUpdate1.world.activities, c)).filter(x => x != undefined) as Diff[];
   activityDiffs.forEach(diff => applyDiffToWorld(world, diff));
   
   const allDiffs = [...simUpdate1.diffs, ...activityDiffs];
@@ -100,27 +100,24 @@ export function reduceWorldOnTick ({ world }: SimUpdate, clientCommands: ClientC
   return { world, diffs: allDiffs };
 }
 
-function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity: { isOn, ...otherProps } }: ClientCommand): ObjectMap<Activity> {
-  let currentActivity = Object.values(activities).find(x => x.type === otherProps.type && x.entityId === otherProps.entityId);
-  
-  if (isOn) {
+function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity }: ClientCommand): Diff | undefined {
+  let currentActivity = Object.values(activities).find(x => x.type === activity.type && x.entityId === activity.entityId);
+  console.log(activity, currentActivity);
+  if (activity.isOn) {
     if (!currentActivity) {
-      currentActivity = { id: getNewId(), ...otherProps };
+      currentActivity = { id: getNewId(), ...activity };
     }
     
-    return { ...activities, [currentActivity.id]: { ...currentActivity, ...otherProps } };
+    return { type: "Upsert", targetType: "Activity", target: { ...currentActivity, ...activity } } as Diff;
   }
-  else {
-    const copy = { ...activities };
-    if (currentActivity) {
-      delete copy[currentActivity.id]
-    }
-    return copy;
+  else if (currentActivity) {
+    return { type: "Delete", targetType: "Activity", targetId: currentActivity.id } as Diff;
   }
 }
 
 // TODO: maybe make immutable
 function applyDiffToWorld (world: World, diff: Diff): void {
+  
   switch (diff.type) {
     case "Upsert": {
       if (diff.targetType == 'Entity') {
@@ -132,6 +129,7 @@ function applyDiffToWorld (world: World, diff: Diff): void {
       break;
     }
     case "Delete": {
+      console.log('delete', diff);
       if (diff.targetType === 'Entity') {
         delete world.entities[diff.targetId];
         Object.values(world.activities).filter(x => x.entityId === diff.targetId).forEach(x => delete world.activities[x.id]);
@@ -146,12 +144,13 @@ function applyDiffToWorld (world: World, diff: Diff): void {
 
 function performActivity (world: World, activity: Activity): SimUpdate {
   if (activity.type === "ProjectileMove") { // TODO: review this magic into a rule
+    console.log('perf', activity, activity.entityId)
     const projectile = world.entities[activity.entityId] as Projectile; // TODO: remove type casting
     
     const diffs = projectileBehaviour.reduce(projectile, activity);
     diffs.forEach(diff => applyDiffToWorld(world, diff));
     const diffs2 = affect(world, projectile);
-
+    diffs2.forEach(diff => applyDiffToWorld(world, diff));
     return {
       world,
       diffs: [...diffs, ...diffs2]
@@ -163,7 +162,7 @@ function performActivity (world: World, activity: Activity): SimUpdate {
     const diffs = actorBehaviour.reduce(actor, activity);
     diffs.forEach(diff => applyDiffToWorld(world, diff));
     const diffs2 = affect(world, actor);
-
+    diffs2.forEach(diff => applyDiffToWorld(world, diff));
     return {
       world,
       diffs: [...diffs, ...diffs2]
@@ -174,7 +173,6 @@ function performActivity (world: World, activity: Activity): SimUpdate {
 function affect (world: World, entity: Entity): Diff[] {
   if (entity.type === "Projectile") {
     if (!intersects(entity, { size: world.size, location: { x: 0, y: 0 } })) {
-      delete world.entities[entity.id];
       return [{ type: "Delete", targetType: "Entity", targetId: entity.id }]
     }
   }

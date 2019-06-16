@@ -86,12 +86,11 @@ impl SimInterop {
         let diffs: Vec<Diff> = update_world(&mut self.world_state, &sim_commands);
         diffs
             .iter()
-            .map(|diff| match diff {
+            .flat_map(|diff| match diff {
                 Diff::DeleteEntity(id) => Some(JS_Diff { delete_entity_id: Some(*id), upsert_entity: None }),
                 Diff::UpsertEntity(entity) => Some(JS_Diff { delete_entity_id: None, upsert_entity: Some(entity.id) }),
                 _ => None,
             })
-            .flatten()
             .collect()
     }
 }
