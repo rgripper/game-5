@@ -4,7 +4,6 @@ import { move } from "../Physics";
 
 export const projectileBehaviour: EntityBehaviour<Projectile> = {
   reduce(projectile: Projectile, activity: Activity): Diff[] {
-    console.log('proj', projectile);
     switch (activity.type) {
       case "ProjectileMove": {
         const updatedProjectile = { 

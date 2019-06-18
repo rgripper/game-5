@@ -26,7 +26,7 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
 function shoot (actor: Actor): Diff[] {
   const projectile: Projectile = { 
     id: getNewId(), 
-    location: { ...actor.location, x: actor.location.x + actor.size.width, y: actor.location.y - actor.size.height - 15 }, // TODO: generate shooting point
+    location: { ...actor.location, x: actor.location.x + actor.size.width, y: actor.location.y - 4 }, // TODO: generate shooting point
     size: { width: 4, height: 2 },
     rotation: actor.rotation,
     type: "Projectile" 

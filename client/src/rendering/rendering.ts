@@ -5,7 +5,7 @@ import projectileImage from '../assets/Projectile.png';
 import { World, Entity } from "../sim/worldProcessor";
 import * as PIXI from 'pixi.js';
 
-const containers = new Map<number, PIXI.DisplayObject>();
+const renderedEntities = new Map<number, RenderedEntity>();
 
 function getImageByEntityType(entity: Entity): string {
   switch (entity.type) {
@@ -17,36 +17,47 @@ function getImageByEntityType(entity: Entity): string {
   }
 }
 
-function createDisplayObject (entity: Entity, app: PIXI.Application, image: string): PIXI.DisplayObject {
-  const sprite = PIXI.Sprite.from(image);
+type RenderedEntity = { 
+  container: PIXI.DisplayObject; 
+  main: PIXI.Sprite;
+}
 
+function createRenderedEntity (entity: Entity, app: PIXI.Application, image: string): RenderedEntity {
+  const sprite = PIXI.Sprite.from(image);
+  sprite.anchor.x = 0.5;
+  sprite.anchor.y = 0.5;
   sprite.scale.x /= 6;
   sprite.scale.y /= 6;
+  sprite.x = entity.size.width / 2;
+  sprite.y = entity.size.height / 2;
 
   const collisionRect = new PIXI.Graphics();
-  // set the line style to have a width of 5 and set the color to red
   collisionRect.lineStyle(1, 0x90CAF9, 0.8);
-  // draw a rectangle
   collisionRect.drawRect(0, 0, entity.size.width, entity.size.height);
-  
-  const container = new PIXI.Container();
 
+  const container = new PIXI.Container();
   container.addChild(sprite);
   container.addChild(collisionRect);
 
+  const renderedEntity = {
+    container,
+    main: sprite
+  };
+
   app.stage.addChild(container);
 
-  containers.set(entity.id, container);
-  return container;
+  renderedEntities.set(entity.id, renderedEntity);
+
+  return renderedEntity;
 }
 
 // TODO: convert to Diffs somehow?
 export function renderWorld(world: World, app: PIXI.Application) {
   Object.values(world.entities).forEach(entity => {
-    const displayObject = createDisplayObject(entity, app, getImageByEntityType(entity));
-    displayObject.rotation = entity.rotation;
-    displayObject.x = entity.location.x;
-    displayObject.y = entity.location.y;
+    const re = createRenderedEntity(entity, app, getImageByEntityType(entity));
+    re.main.rotation = entity.rotation;
+    re.container.x = entity.location.x;
+    re.container.y = entity.location.y;
   })
 }
 
@@ -57,19 +68,19 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
     }
     switch(diff.type) {
       case "Upsert": {
-        const displayObject = containers.get(diff.target.id) || createDisplayObject(diff.target, app, getImageByEntityType(diff.target));
+        const re = renderedEntities.get(diff.target.id) || createRenderedEntity(diff.target, app, getImageByEntityType(diff.target));
         if (diff.target.type === "Actor") {
-          displayObject.alpha = diff.target.currentHealth / diff.target.maxHealth;
+          re.container.alpha = diff.target.currentHealth / diff.target.maxHealth;
         }
-        displayObject.rotation = diff.target.rotation;
-        displayObject.x = diff.target.location.x;
-        displayObject.y = diff.target.location.y;
+        re.main.rotation = diff.target.rotation + diff.target.location.x/5;
+        re.container.x = diff.target.location.x;
+        re.container.y = diff.target.location.y;
         return;
       }
       case "Delete": {
-        const sprite = containers.get(diff.targetId)!;
-        app.stage.removeChild(sprite);
-        containers.delete(diff.targetId);
+        const re = renderedEntities.get(diff.targetId)!;
+        app.stage.removeChild(re.container);
+        renderedEntities.delete(diff.targetId);
         return;
       }
     }
