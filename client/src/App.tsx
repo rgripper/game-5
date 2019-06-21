@@ -29,7 +29,7 @@ function App () {
     })
 
     const initialWorld = {
-      size: { width: 500, height: 500 },
+      size: { width: 300, height: 300 },
       players: {
         [humanPlayer]: { id: humanPlayer },
         [monsterPlayer]: { id: monsterPlayer }
@@ -50,7 +50,7 @@ function App () {
       // });
       
       const gameView = document.getElementById('gameView')!;
-      const app = new PIXI.Application({backgroundColor : 0xD500F9, width: 800, height: 600});
+      const app = new PIXI.Application({backgroundColor : 0xD500F9, width: 300, height: 300});
       gameView.appendChild(app.view);
 
       const initialOutcome: SimUpdate = {

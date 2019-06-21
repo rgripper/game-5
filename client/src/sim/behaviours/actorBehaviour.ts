@@ -1,7 +1,8 @@
-import { Actor, Activity, Entity, Projectile, AxisState, EntityBehaviour } from "../worldProcessor";
+import { Actor, Activity, Entity, Projectile, EntityBehaviour } from "../worldProcessor";
 import { Diff } from "../Diff";
 import { getNewId } from "../Identity";
 import { move } from "../Physics";
+import { rotatePoint } from "../Geometry";
 
 export const actorBehaviour: EntityBehaviour<Actor> = {
   reduce(actor: Actor, activity: Activity): Diff[] {
@@ -9,7 +10,7 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
       case "CharacterMove": {
         const updatedActor = { 
           ...actor, 
-          location: move(actor.location, 2, activity.direction) 
+          location: move(actor.location, 2, activity.direction)
         };
         return [{ target: updatedActor, targetType: "Entity", type: "Upsert" }];
       }
@@ -24,9 +25,15 @@ export const actorBehaviour: EntityBehaviour<Actor> = {
 }
 
 function shoot (actor: Actor): Diff[] {
+  const shootingPoint = { x: actor.size.width + 20, y: actor.size.height - 2 };
+  const center = { x: actor.size.width / 2, y: actor.size.height / 2 };
+  const rotatedShootingPoint = rotatePoint(shootingPoint, center, actor.rotation);
+  
+  const newLocation = { x: actor.location.x + rotatedShootingPoint.x, y: actor.location.y + rotatedShootingPoint.y };
+  console.log('hmm', actor.location, shootingPoint, rotatedShootingPoint, newLocation, actor.rotation)
   const projectile: Projectile = { 
     id: getNewId(), 
-    location: { ...actor.location, x: actor.location.x + actor.size.width, y: actor.location.y - 4 }, // TODO: generate shooting point
+    location: newLocation, // TODO: generate shooting point
     size: { width: 4, height: 2 },
     rotation: actor.rotation,
     type: "Projectile" 
@@ -41,6 +48,6 @@ function shoot (actor: Actor): Diff[] {
   }
   return [
     { target: projectile, targetType: "Entity", type: "Upsert" },
-    { target: projectileActivity, targetType: "Activity", type: "Upsert" }
+    //{ target: projectileActivity, targetType: "Activity", type: "Upsert" }
   ];
 }

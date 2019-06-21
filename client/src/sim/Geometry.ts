@@ -23,3 +23,15 @@ export function intersects (rect1: { size: Size, location: Point }, rect2: { siz
     );
   }
   
+export function rotatePoint(point: Point, center: Point, rotation: Radians): Point {
+  const sin = Math.sin(rotation);
+  const cos = Math.cos(rotation);
+  const diffX = point.x - center.x;
+  const diffY = point.y - center.y;
+  const result = { 
+    x: cos * diffX - sin * diffY + center.x, 
+    y: sin * diffX + cos * diffY + center.y
+  };
+
+  return result;
+}

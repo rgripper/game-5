@@ -89,7 +89,7 @@ export type World = {
 export type SimUpdate = { world: World; diffs: Diff[] };
 
 export function reduceWorldOnTick ({ world }: SimUpdate, clientCommands: ClientCommand[]): SimUpdate {
-  const prevActivities = Object.values(world.activities);
+  const prevActivities = Object.values(world.activities); // seems like activities are not being processed
   const simUpdate1 = prevActivities.reduce((simUpdate, item) => performActivity(simUpdate.world, item), { world, diffs: [] as Diff[] })
   
   const activityDiffs = clientCommands.map(c => reduceActivitiesByCommand(simUpdate1.world.activities, c)).filter(x => x != undefined) as Diff[];
@@ -117,7 +117,6 @@ function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity 
 
 // TODO: maybe make immutable
 function applyDiffToWorld (world: World, diff: Diff): void {
-  
   switch (diff.type) {
     case "Upsert": {
       if (diff.targetType == 'Entity') {
@@ -129,7 +128,6 @@ function applyDiffToWorld (world: World, diff: Diff): void {
       break;
     }
     case "Delete": {
-      console.log('delete', diff);
       if (diff.targetType === 'Entity') {
         delete world.entities[diff.targetId];
         Object.values(world.activities).filter(x => x.entityId === diff.targetId).forEach(x => delete world.activities[x.id]);
@@ -144,7 +142,6 @@ function applyDiffToWorld (world: World, diff: Diff): void {
 
 function performActivity (world: World, activity: Activity): SimUpdate {
   if (activity.type === "ProjectileMove") { // TODO: review this magic into a rule
-    console.log('perf', activity, activity.entityId)
     const projectile = world.entities[activity.entityId] as Projectile; // TODO: remove type casting
     
     const diffs = projectileBehaviour.reduce(projectile, activity);

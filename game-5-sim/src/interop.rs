@@ -49,7 +49,7 @@ impl SimInterop {
             world_state: WorldState {
                 new_id: 1,
                 rect: Rect {
-                    top_left: Point { x: 0, y: 0 },
+                    top_left: Point { x: 0.0, y: 0.0 },
                     size: Size {
                         width: 640,
                         height: 480,

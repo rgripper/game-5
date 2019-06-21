@@ -72,7 +72,7 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
         if (diff.target.type === "Actor") {
           re.container.alpha = diff.target.currentHealth / diff.target.maxHealth;
         }
-        re.main.rotation = diff.target.rotation + diff.target.location.x/5;
+        re.main.rotation = diff.target.rotation;
         re.container.x = diff.target.location.x;
         re.container.y = diff.target.location.y;
         return;

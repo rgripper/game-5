@@ -2,8 +2,8 @@ use crate::world::ID;
 use crate::physics::Velocity;
 use crate::geometry::Radians;
 use crate::world::GenNewID;
-use crate::physics::move_point;
-use crate::geometry::{Point, Size, Rect};
+use crate::physics::{ move_point };
+use crate::geometry::{Point, Size, Rect, rotate_point };
 use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
 use crate::sim::{Diff};
 
@@ -28,14 +28,21 @@ fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians) -> Ve
 }
 
 fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> Vec<Diff> {
+    let owner_size = owner.boundaries.size;
+    // TODO: refactor, make it a custom shooting point related to weapon and entity sizes
+    let shooting_point = Point { x: owner_size.width as f32 + 20.0, y: owner_size.height as f32 - 2.0 };
+
+    // TODO: impl on top of Boundaries?
+    let center = Point { x: owner_size.width as f32 / 2.0, y: owner_size.height as f32 / 2.0 };
+
+    // TODO: impl on top of Entity?
+    let rotated_shooting_point = rotate_point(&shooting_point, center, &owner.rotation);
+
     let projectile = Entity { 
         id: new_projectile_id, 
         boundaries: Rect {  // TODO: generate shooting point
             size: Size { width: 4, height: 2 },
-            top_left: Point { 
-                x: owner.boundaries.top_left.x + owner.boundaries.size.width, 
-                y: owner.boundaries.top_left.y - owner.boundaries.size.height - 15 
-            }
+            top_left: rotated_shooting_point
         },
         health: Health {
             current: 1,
