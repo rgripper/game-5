@@ -47,6 +47,8 @@ type CharacterMove = {
 type CharacterShoot = {
   type: "CharacterShoot";
   entityId: Actor["id"];
+  cooldown: number;
+  currentCooldown: number;
 }
 
 type ProjectileActivity = {
@@ -90,7 +92,10 @@ export type SimUpdate = { world: World; diffs: Diff[] };
 
 export function reduceWorldOnTick ({ world }: SimUpdate, clientCommands: ClientCommand[]): SimUpdate {
   const prevActivities = Object.values(world.activities); // seems like activities are not being processed
-  const simUpdate1 = prevActivities.reduce((simUpdate, item) => performActivity(simUpdate.world, item), { world, diffs: [] as Diff[] })
+  const simUpdate1 = prevActivities.reduce((simUpdate, item) => {
+    const upd = performActivity(simUpdate.world, item);
+    return { world: upd.world, diffs: [...simUpdate.diffs, ...upd.diffs] };
+  }, { world, diffs: [] as Diff[] })
   
   const activityDiffs = clientCommands.map(c => reduceActivitiesByCommand(simUpdate1.world.activities, c)).filter(x => x != undefined) as Diff[];
   activityDiffs.forEach(diff => applyDiffToWorld(world, diff));
@@ -102,10 +107,11 @@ export function reduceWorldOnTick ({ world }: SimUpdate, clientCommands: ClientC
 
 function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity }: ClientCommand): Diff | undefined {
   let currentActivity = Object.values(activities).find(x => x.type === activity.type && x.entityId === activity.entityId);
-  console.log(activity, currentActivity);
   if (activity.isOn) {
     if (!currentActivity) {
-      currentActivity = { id: getNewId(), ...activity };
+      currentActivity = activity.type === "CharacterMove" 
+        ? ({ id: getNewId(), ...activity } as (ActivityBase & CharacterMove)) 
+        : ({ id: getNewId(), ...activity, cooldown: 100, currentCooldown: 0 } as (ActivityBase & CharacterShoot));
     }
     
     return { type: "Upsert", targetType: "Activity", target: { ...currentActivity, ...activity } } as Diff;
@@ -148,6 +154,7 @@ function performActivity (world: World, activity: Activity): SimUpdate {
     diffs.forEach(diff => applyDiffToWorld(world, diff));
     const diffs2 = affect(world, projectile);
     diffs2.forEach(diff => applyDiffToWorld(world, diff));
+
     return {
       world,
       diffs: [...diffs, ...diffs2]
@@ -160,6 +167,7 @@ function performActivity (world: World, activity: Activity): SimUpdate {
     diffs.forEach(diff => applyDiffToWorld(world, diff));
     const diffs2 = affect(world, actor);
     diffs2.forEach(diff => applyDiffToWorld(world, diff));
+
     return {
       world,
       diffs: [...diffs, ...diffs2]

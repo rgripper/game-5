@@ -50,7 +50,7 @@ function App () {
       // });
       
       const gameView = document.getElementById('gameView')!;
-      const app = new PIXI.Application({backgroundColor : 0xD500F9, width: 300, height: 300});
+      const app = new PIXI.Application({backgroundColor : 0xFFAAFF, width: 300, height: 300});
       gameView.appendChild(app.view);
 
       const initialOutcome: SimUpdate = {
@@ -93,7 +93,13 @@ function App () {
         batchTicksPerFrame,
         collectDiffsFromTicks,
         tap<Diff[]>(diffs => {
-          diffs.forEach(diff => applyDiffToWorld(clientWorld, diff));
+          
+          diffs.forEach(diff => {
+            if(diff.type === "Delete") {
+              console.log(diff)
+            }
+            applyDiffToWorld(clientWorld, diff)
+          });
           setDebuggedWorld({ ...clientWorld });
         }),
         processDiffs
