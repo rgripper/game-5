@@ -5,8 +5,9 @@
   "license": "MIT",
   "scripts": {
     "start": "webpack-dev-server",
+    "build": "yarn webpack",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -b master -d build"
+    "deploy": "gh-pages -d build"
   },
   "devDependencies": {
     "@types/pixi.js": "^4.8.7",
