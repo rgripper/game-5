@@ -111,7 +111,7 @@ function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity 
     if (!currentActivity) {
       currentActivity = activity.type === "CharacterMove" 
         ? ({ id: getNewId(), ...activity } as (ActivityBase & CharacterMove)) 
-        : ({ id: getNewId(), ...activity, cooldown: 100, currentCooldown: 0 } as (ActivityBase & CharacterShoot));
+        : ({ id: getNewId(), ...activity, cooldown: 5, currentCooldown: 0 } as (ActivityBase & CharacterShoot));
     }
     
     return { type: "Upsert", targetType: "Activity", target: { ...currentActivity, ...activity } } as Diff;

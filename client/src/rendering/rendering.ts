@@ -51,14 +51,10 @@ function createRenderedEntity (entity: Entity, app: PIXI.Application, image: str
   return renderedEntity;
 }
 
-// TODO: convert to Diffs somehow?
+// TODO: convert to Diffs streaming somehow?
 export function renderWorld(world: World, app: PIXI.Application) {
-  Object.values(world.entities).forEach(entity => {
-    const re = createRenderedEntity(entity, app, getImageByEntityType(entity));
-    re.main.rotation = entity.rotation;
-    re.container.x = entity.location.x;
-    re.container.y = entity.location.y;
-  })
+  const initialDiffs: Diff[] = Object.values(world.entities).map(entity => ({ target: entity, targetType: 'Entity', type: 'Upsert' }));
+  renderDiffs(initialDiffs, app);
 }
 
 export function renderDiffs(diffs: Diff[], app: PIXI.Application) {

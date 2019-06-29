@@ -48,7 +48,10 @@ pub enum ProcessPayload {
         direction: Radians,
         velocity: Velocity,
     },
-    EntityShoot,
+    EntityShoot {
+        cooldown: i32,
+        currentCooldown: i32,
+    },
 }
 
 impl ProcessPayload {

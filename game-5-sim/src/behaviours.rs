@@ -8,10 +8,33 @@ use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
 use crate::sim::{Diff};
 
 // TODO: rename  'update'
-pub fn copy_update_entity_by_process_payload(entity: &Entity, process_payload: &ProcessPayload, gen_new_id: &GenNewID) -> Vec<Diff> {
-    match process_payload {
-        ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, velocity, direction),
-        ProcessPayload::EntityShoot { .. } => shoot_from(entity, gen_new_id(), gen_new_id())
+pub fn copy_update_entity_by_process_payload(entity: &Entity, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
+    match process.payload {
+        ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, &velocity, &direction),
+        ProcessPayload::EntityShoot { cooldown, currentCooldown } => {
+            if currentCooldown == 0 {
+                let shotDiffs = shoot_from(entity, gen_new_id(), gen_new_id());
+                let updatedProcess = Process { 
+                    payload: ProcessPayload::EntityShoot { cooldown, currentCooldown: cooldown },
+                    ..*process
+                };
+                return vec![
+                    Diff::UpsertProcess(updatedProcess),
+                    shotDiffs.0,
+                    shotDiffs.1
+                ];
+            }
+            else {
+                let updatedProcess = Process { 
+                    payload: ProcessPayload::EntityShoot { cooldown, currentCooldown: currentCooldown - 1 },
+                    ..*process
+                };
+                vec![
+                    Diff::UpsertProcess(updatedProcess)
+                ]
+            }
+            
+        }
     }
 }
 
@@ -27,7 +50,7 @@ fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians) -> Ve
     vec![Diff::UpsertEntity(updated_entity)]
 }
 
-fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> Vec<Diff> {
+fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (Diff, Diff) {
     let owner_size = owner.boundaries.size;
     // TODO: refactor, make it a custom shooting point related to weapon and entity sizes
     let shooting_point = Point { x: owner_size.width as f32 + 20.0, y: owner_size.height as f32 - 2.0 };
@@ -56,11 +79,11 @@ fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> Ve
     let projectile_activity = Process { 
         id: new_activity_id,
         entity_id: projectile.id,
-        payload: ProcessPayload::EntityShoot,
+        payload: ProcessPayload::EntityShoot { cooldown: 5, currentCooldown: 0 },
     };
 
-    return vec![
+    return (
         Diff::UpsertEntity(projectile), 
         Diff::UpsertProcess(projectile_activity)
-    ];
+    );
 }

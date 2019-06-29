@@ -6,7 +6,7 @@ import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
 import { Observable, Subscriber, fromEvent } from 'rxjs';
 import { Diff } from './sim/Diff';
-import { getRadians, Point, intersects } from './sim/Geometry';
+import { getRadians, Point } from './sim/Geometry';
 import { getNewId } from './sim/Identity';
 import { applyDiffToWorld } from './clientSim/world';
 import DebugView from './DebugView';
@@ -37,8 +37,6 @@ function App () {
       activities: {}, 
       entities: actors, 
     };
-
-    
 
     const [debuggedWorld, setDebuggedWorld] = useState<World>(initialWorld);
     const [debuggedPosition, setDebuggedPosition] = useState<Point | undefined>(undefined);
@@ -93,13 +91,7 @@ function App () {
         batchTicksPerFrame,
         collectDiffsFromTicks,
         tap<Diff[]>(diffs => {
-          
-          diffs.forEach(diff => {
-            if(diff.type === "Delete") {
-              console.log(diff)
-            }
-            applyDiffToWorld(clientWorld, diff)
-          });
+          diffs.forEach(diff => applyDiffToWorld(clientWorld, diff));
           setDebuggedWorld({ ...clientWorld });
         }),
         processDiffs

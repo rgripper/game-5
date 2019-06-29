@@ -50,7 +50,7 @@ pub fn update_world(
             .get(&entity_id)
             .map(|entity| {
                 let process = world_state.processes.get(&process_id).unwrap();
-                copy_update_entity_by_process_payload(entity, &process.payload, &gen_new_id)
+                copy_update_entity_by_process_payload(entity, &process, &gen_new_id)
             })
             .unwrap_or_else(|| vec![]);
 
@@ -113,7 +113,7 @@ fn produce_diff_from_command(
                     .processes
                     .values()
                     .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id);
-                let new_payload = ProcessPayload::EntityShoot;
+                let new_payload = ProcessPayload::EntityShoot { cooldown: 5, currentCooldown: 0 };
                 let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
                 Some(Diff::UpsertProcess(process))
             },
