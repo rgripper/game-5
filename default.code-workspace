@@ -1,0 +1,13 @@
+{
+	"folders": [
+    {
+      "path": "game-5-sim"
+    },
+    {
+      "path": "client"
+    }
+  ],
+  "settings": {
+    "git.ignoreLimitWarning": true
+  }
+}
