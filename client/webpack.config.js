@@ -6,7 +6,7 @@ module.exports = {
   mode: 'development',
   entry: {
     app: './src/index.tsx',
-    simWorker: './src/SimWorker.ts',
+    serverPipeline: './src/server/pipeline.ts',
   },
   module: {
     rules: [

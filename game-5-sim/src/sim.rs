@@ -1,11 +1,14 @@
 use crate::behaviours::copy_update_entity_by_process_payload;
 use crate::geometry::{intersects, Radians};
-use crate::world::{Entity, EntityType, GenNewID, Process, ProcessPayload, WorldState, ID};
+use crate::world::{Entity, EntityType, GenNewID, Process, ProcessPayload, Player, WorldState, ID};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Diff {
     DeleteEntity(ID),
     UpsertEntity(Entity),
+
+    DeletePlayer(ID),
+    UpsertPlayer(Player),
 
     DeleteProcess(ID),
     UpsertProcess(Process),
@@ -113,7 +116,7 @@ fn produce_diff_from_command(
                     .processes
                     .values()
                     .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id);
-                let new_payload = ProcessPayload::EntityShoot { cooldown: 5, currentCooldown: 0 };
+                let new_payload = ProcessPayload::EntityShoot { cooldown: 5, current_cooldown: 0 };
                 let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
                 Some(Diff::UpsertProcess(process))
             },
@@ -149,6 +152,9 @@ fn apply_diff_to_world(world_state: &mut WorldState, diff: &Diff) {
         Diff::UpsertProcess(process) => {
             world_state.processes.insert(process.id, *process);
         }
+        Diff::UpsertPlayer(player) => {
+            world_state.players.insert(player.id, *player);
+        }
         Diff::DeleteEntity(entity_id) => {
             world_state.entities.remove(entity_id);
             let process_ids: Vec<ID> = world_state
@@ -163,6 +169,9 @@ fn apply_diff_to_world(world_state: &mut WorldState, diff: &Diff) {
         }
         Diff::DeleteProcess(id) => {
             world_state.processes.remove(id);
+        }
+        Diff::DeletePlayer(id) => {
+            world_state.players.remove(id);
         }
     }
 }

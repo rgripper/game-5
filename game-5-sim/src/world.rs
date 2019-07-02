@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use crate::geometry::{Rect, Radians};
 use crate::physics::{Velocity};
-use wasm_bindgen::prelude::*;
 
 pub type ID = i32;
 
@@ -30,9 +29,9 @@ pub struct Entity {
     pub player_id: ID,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Player {
     pub id: ID,
-    pub name: String,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -50,7 +49,7 @@ pub enum ProcessPayload {
     },
     EntityShoot {
         cooldown: i32,
-        currentCooldown: i32,
+        current_cooldown: i32,
     },
 }
 
@@ -78,7 +77,7 @@ pub struct WorldState {
     pub processes: HashMap<ID, Process>,
 }
 
-impl WorldState{
+impl WorldState {
     pub fn gen_new_id (mut self) -> ID {
         let new_id = self.new_id;
         self.new_id = self.new_id + 1;

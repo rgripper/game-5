@@ -7,30 +7,30 @@ use crate::geometry::{Point, Size, Rect, rotate_point };
 use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
 use crate::sim::{Diff};
 
-// TODO: rename  'update'
+// TODO: change word 'update' to something more appropriate?
 pub fn copy_update_entity_by_process_payload(entity: &Entity, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
     match process.payload {
         ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, &velocity, &direction),
-        ProcessPayload::EntityShoot { cooldown, currentCooldown } => {
-            if currentCooldown == 0 {
-                let shotDiffs = shoot_from(entity, gen_new_id(), gen_new_id());
-                let updatedProcess = Process { 
-                    payload: ProcessPayload::EntityShoot { cooldown, currentCooldown: cooldown },
+        ProcessPayload::EntityShoot { cooldown, current_cooldown } => {
+            if current_cooldown == 0 {
+                let shot_diffs = shoot_from(entity, gen_new_id(), gen_new_id());
+                let updated_process = Process { 
+                    payload: ProcessPayload::EntityShoot { cooldown, current_cooldown: cooldown },
                     ..*process
                 };
                 return vec![
-                    Diff::UpsertProcess(updatedProcess),
-                    shotDiffs.0,
-                    shotDiffs.1
+                    Diff::UpsertProcess(updated_process),
+                    shot_diffs.0,
+                    shot_diffs.1
                 ];
             }
             else {
-                let updatedProcess = Process { 
-                    payload: ProcessPayload::EntityShoot { cooldown, currentCooldown: currentCooldown - 1 },
+                let updated_process = Process { 
+                    payload: ProcessPayload::EntityShoot { cooldown, current_cooldown: current_cooldown - 1 },
                     ..*process
                 };
                 vec![
-                    Diff::UpsertProcess(updatedProcess)
+                    Diff::UpsertProcess(updated_process)
                 ]
             }
             
@@ -79,7 +79,7 @@ fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (D
     let projectile_activity = Process { 
         id: new_activity_id,
         entity_id: projectile.id,
-        payload: ProcessPayload::EntityShoot { cooldown: 5, currentCooldown: 0 },
+        payload: ProcessPayload::EntityShoot { cooldown: 5, current_cooldown: 0 },
     };
 
     return (

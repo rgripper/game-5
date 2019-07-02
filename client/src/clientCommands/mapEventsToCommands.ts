@@ -1,5 +1,5 @@
 import { fromEvent, merge, Observable } from "rxjs";
-import { ClientCommand } from "../sim/worldProcessor";
+import { SimCommand } from "../sim/sim";
 import { filter, map } from "rxjs/operators";
 import { FromEventTarget } from "rxjs/internal/observable/fromEvent";
 import { mapMovementKeysToCommands, MovementKeys } from "./MovementControl";
@@ -13,8 +13,8 @@ export function mapEventsToCommands (target: FromEventTarget<any>, movementKeys:
   
   const shootingCommands$ = 
     merge(
-      keyDowns$.pipe(filter(e => e.key === " "), map(e => ({ type: "CharacterControlCommand", activity: { type: "CharacterShoot", entityId, isOn: true } } as ClientCommand))),
-      keyUps$.pipe(filter(e => e.key === " "), map(e => ({ type: "CharacterControlCommand", activity: { type: "CharacterShoot", entityId, isOn: false } } as ClientCommand)))
+      keyDowns$.pipe(filter(e => e.key === " "), map(e => ({ type: "CharacterControlCommand", activity: { type: "CharacterShoot", entityId, isOn: true } } as SimCommand))),
+      keyUps$.pipe(filter(e => e.key === " "), map(e => ({ type: "CharacterControlCommand", activity: { type: "CharacterShoot", entityId, isOn: false } } as SimCommand)))
     );
 
   // const mouseCommandsOn$ = fromEvent<MouseEvent>(document, 'mousedown').pipe(map(event => mapMouse(event, true, playerId, entityId)));
@@ -26,7 +26,7 @@ export function mapEventsToCommands (target: FromEventTarget<any>, movementKeys:
   return allCommands$;
 }
 
-function mapMouse (event: MouseEvent, isOn: boolean, playerId: number, entityId: number): ClientCommand | undefined {
+function mapMouse (event: MouseEvent, isOn: boolean, playerId: number, entityId: number): SimCommand | undefined {
   switch (event.button) {
     case 0: return { type: "CharacterControlCommand", activity: isOn ? { type: "CharacterShoot", entityId, isOn } : { type: "CharacterShoot", entityId, isOn } };
     default: return undefined;

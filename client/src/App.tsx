@@ -1,44 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import * as PIXI from 'pixi.js';
-import { reduceWorldOnTick, SimUpdate, ClientCommand, Actor, World } from './sim/worldProcessor';
+import { SimUpdate, SimCommand, Actor, WorldState, CreationCommand } from './sim/sim';
 import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
 import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
-import { Observable, Subscriber, fromEvent } from 'rxjs';
+import { Observable, Subscriber, fromEvent, from, concat } from 'rxjs';
 import { Diff } from './sim/Diff';
 import { getRadians, Point } from './sim/Geometry';
 import { getNewId } from './sim/Identity';
 import { applyDiffToWorld } from './clientSim/world';
 import DebugView from './DebugView';
+import { createPipeline } from './SimClient';
+
+function createCommands() {
+  const humanPlayerId = 1;
+  const monsterPlayerId = 2;
+
+  const humanActor: Actor = { location: { x: 25, y: 25 }, playerId: humanPlayerId, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: getNewId(), type: "Actor" };
+
+  const monsters: Actor[] = [
+    { location: { x: 125, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
+    { location: { x: 145, y: 145 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
+    { location: { x: 76, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" }
+  ]
+
+  const actors = [humanActor, ...monsters];
+
+  const players = [{ id: humanPlayerId }, { id: monsterPlayerId }];
+
+  const movementKeys = {
+    forward: 'w',
+    back: 's',
+    left: 'a',
+    right: 'd'
+  }
+
+  return {
+    controlCommands$: mapEventsToCommands(document, movementKeys, humanActor.playerId, humanActor.id),
+    initCommands$: from([
+      ...actors.map(entity => ({ type: "AddEntity", entity } as SimCommand)),
+      ...players.map(player => ({ type: "AddPlayer", player } as SimCommand))
+    ])
+  }
+}
 
 function App () {
-
-    const humanPlayer = 1;
-    const monsterPlayer = 2;
-
-    const humanActor: Actor = { location: { x: 25, y: 25 }, playerId: humanPlayer, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: getNewId(), type: "Actor" };
-
-    const monsters: Actor[] = [
-      { location: { x: 125, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
-      { location: { x: 145, y: 145 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
-      { location: { x: 76, y: 125 }, playerId: monsterPlayer, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" }
-    ]
-
-    const actors = monsters.reduce((acc, current) => ({ ...acc, [current.id.toString()]: current }), {
-      [humanActor.id.toString()]: humanActor
-    })
-
     const initialWorld = {
       size: { width: 300, height: 300 },
-      players: {
-        [humanPlayer]: { id: humanPlayer },
-        [monsterPlayer]: { id: monsterPlayer }
-      },
+      players: {},
       activities: {}, 
-      entities: actors, 
+      entities: {}, 
     };
 
-    const [debuggedWorld, setDebuggedWorld] = useState<World>(initialWorld);
+    const [debuggedWorld, setDebuggedWorld] = useState<WorldState>(initialWorld);
     const [debuggedPosition, setDebuggedPosition] = useState<Point | undefined>(undefined);
 
     useEffect(() => {
@@ -48,7 +62,7 @@ function App () {
       // });
       
       const gameView = document.getElementById('gameView')!;
-      const app = new PIXI.Application({backgroundColor : 0xFFAAFF, width: 300, height: 300});
+      const app = new PIXI.Application({backgroundColor : 0xFFAAFF, ...initialWorld.size});
       gameView.appendChild(app.view);
 
       const initialOutcome: SimUpdate = {
@@ -58,38 +72,31 @@ function App () {
 
       renderInitialWorld(initialOutcome.world, app);
 
-      const movementKeys = {
-        forward: 'w',
-        back: 's',
-        left: 'a',
-        right: 'd'
-      }
+      const commandSet = createCommands();
 
-      const commands$ = mapEventsToCommands(document, movementKeys, humanActor.playerId, humanActor.id);
+      const commands$ = concat(commandSet.initCommands$, commandSet.controlCommands$);
 
       const frames$: Observable<void> = Observable.create((subscriber: Subscriber<void>) => {
         app.ticker.add(() => subscriber.next())
       });
 
-      const batchCommandsPerTick = bufferTime<ClientCommand>(10);
-      // todo: something about it needs changing
-      const runTickPerCommandBatch = scan(reduceWorldOnTick, initialOutcome);
-      const batchTicksPerFrame = buffer<SimUpdate>(frames$);
-      const collectDiffsFromTicks = map<SimUpdate[], Diff[]>(outcomes => outcomes.map(x => x.diffs).flat());
+      const batchDiffBatchesPerFrame = buffer<Diff[]>(frames$);
+      const collectDiffs = map((diffs: Diff[][]) => diffs.flat());
       const processDiffs = tap<Diff[]>(diffs => renderDiffs(diffs, app));
       
-      const clientWorld: World = {
+      const clientWorld: WorldState = {
         activities: { ...initialWorld.activities },
         entities: { ...initialWorld.entities },
         players: { ...initialWorld.players },
         size: { ...initialWorld.size }
       };
     
-      const subscription = commands$.pipe(
-        batchCommandsPerTick,
-        runTickPerCommandBatch,
-        batchTicksPerFrame,
-        collectDiffsFromTicks,
+      const pipelineClient = createPipeline({ worldParams: { size: initialWorld.size } });
+      
+      const subscription = pipelineClient.output$.pipe(
+        batchDiffBatchesPerFrame,
+        collectDiffs,
+        processDiffs,
         tap<Diff[]>(diffs => {
           diffs.forEach(diff => applyDiffToWorld(clientWorld, diff));
           setDebuggedWorld({ ...clientWorld });
@@ -97,9 +104,11 @@ function App () {
         processDiffs
       ).subscribe();
       
+      pipelineClient.subscribeInput(commands$);
+
       const clickSubscription = fromEvent<MouseEvent>(app.view, 'click').subscribe(e => {
         setDebuggedPosition({ x: e.offsetX, y: e.offsetY });
-      })
+      });
 
       return () => {
         subscription.unsubscribe();

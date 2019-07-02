@@ -7,7 +7,7 @@ mod sim;
 mod behaviours;
 mod interop;
 
-use crate::interop::SimInterop;
+use crate::interop::{ SimInterop, JS_WorldParams };
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -22,6 +22,6 @@ extern {
 }
 
 #[wasm_bindgen]
-pub fn create_sim() -> SimInterop {
-    SimInterop::new()
+pub fn create_sim(params: JS_WorldParams) -> SimInterop {
+    SimInterop::new(&params)
 }

@@ -1,9 +1,9 @@
-import { Activity, Entity } from "./worldProcessor";
-import { Identifiable, ID } from "./Identity";
+import { Activity, Entity, Player } from "./sim";
+import { ID } from "./Identity";
 
-export type DiffType = "Upsert" | "Delete"
+export type DiffType = "Upsert" | "Delete";
 
-export type Diff = EntityDiff | ActivityDiff
+export type Diff = EntityDiff | ActivityDiff | PlayerDiff;
 
 type DiffBase<T> = 
 | {
@@ -22,3 +22,8 @@ export type EntityDiff = {
 export type ActivityDiff = {
   targetType: 'Activity';
 } & DiffBase<Activity>
+
+export type PlayerDiff = {
+  targetType: 'Player';
+} & DiffBase<Player>
+

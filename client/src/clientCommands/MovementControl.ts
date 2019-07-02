@@ -1,4 +1,4 @@
-import { CharacterControlCommand, AxisState } from "../sim/worldProcessor";
+import { CharacterControlCommand, AxisState } from "../sim/sim";
 import { map, distinctUntilChanged, scan } from "rxjs/operators";
 import { Observable, merge } from "rxjs";
 import { Radians, getRadians } from "../sim/Geometry";

@@ -1,8 +1,8 @@
 import React from 'react';
-import { World } from './sim/worldProcessor';
+import { WorldState } from './sim/sim';
 import { Point, intersects } from './sim/Geometry';
 
-export default function ({ world, position }: { world: World, position?: Point }) {
+export default function ({ world, position }: { world: WorldState, position?: Point }) {
     const entity = position && Object.values(world.entities).find(e => intersects(e, { size: { width: 1, height: 2 }, location: position }))
     const processes = entity && Object.values(world.activities).filter(process => process.entityId === entity.id);
 

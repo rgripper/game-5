@@ -2,7 +2,7 @@ import { Diff } from "../sim/Diff";
 import humanImage from '../assets/Human.png';
 import monsterImage from '../assets/Monster.png';
 import projectileImage from '../assets/Projectile.png';
-import { World, Entity } from "../sim/worldProcessor";
+import { WorldState, Entity } from "../sim/sim";
 import * as PIXI from 'pixi.js';
 
 const renderedEntities = new Map<number, RenderedEntity>();
@@ -52,7 +52,7 @@ function createRenderedEntity (entity: Entity, app: PIXI.Application, image: str
 }
 
 // TODO: convert to Diffs streaming somehow?
-export function renderWorld(world: World, app: PIXI.Application) {
+export function renderWorld(world: WorldState, app: PIXI.Application) {
   const initialDiffs: Diff[] = Object.values(world.entities).map(entity => ({ target: entity, targetType: 'Entity', type: 'Upsert' }));
   renderDiffs(initialDiffs, app);
 }
