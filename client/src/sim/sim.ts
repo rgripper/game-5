@@ -116,7 +116,7 @@ export function updateWorld (world: WorldState, simCommands: SimCommand[]): Diff
   const addPlayerDiffs = simCommands.filter(c => c.type === "AddPlayer").map(c => ({ type: "Upsert", targetType: "Player", target: (c as AddPlayer).player } as Diff));
   addPlayerDiffs.forEach(diff => applyDiffToWorld(world, diff));
 
-  const allDiffs = [...simUpdate1.diffs, ...activityDiffs];
+  const allDiffs = [...simUpdate1.diffs, ...activityDiffs, ...addEntityDiffs, ...addPlayerDiffs];
   //const entityDiffs = lobbyCommands.map(x => ({ target: { location: { x: 25, y: 25 }, id: 1 }, type: "Upsert", targetType: "Entity" }) as EntityDiff);
   return allDiffs;
 }

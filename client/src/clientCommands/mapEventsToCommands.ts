@@ -4,12 +4,14 @@ import { filter, map } from "rxjs/operators";
 import { FromEventTarget } from "rxjs/internal/observable/fromEvent";
 import { mapMovementKeysToCommands, MovementKeys } from "./MovementControl";
 
-export function mapEventsToCommands (target: FromEventTarget<any>, movementKeys: MovementKeys, playerId: number, entityId: number) {
+type MapEventsToCommandsParams = { target: FromEventTarget<any>, movementKeys: MovementKeys, entityId: number }
+
+export function mapEventsToCommands ({ target, movementKeys, entityId }: MapEventsToCommandsParams) {
 
   const keyDowns$ = fromEvent<KeyboardEvent>(target, 'keydown').pipe(filter(x => !x.repeat));
   const keyUps$ = fromEvent<KeyboardEvent>(target, 'keyup');
   
-  const movementCommands$ = mapMovementKeysToCommands(movementKeys, { keyUps$, keyDowns$, entityId, playerId });
+  const movementCommands$ = mapMovementKeysToCommands(movementKeys, { keyUps$, keyDowns$, entityId });
   
   const shootingCommands$ = 
     merge(
@@ -26,7 +28,7 @@ export function mapEventsToCommands (target: FromEventTarget<any>, movementKeys:
   return allCommands$;
 }
 
-function mapMouse (event: MouseEvent, isOn: boolean, playerId: number, entityId: number): SimCommand | undefined {
+function mapMouse (event: MouseEvent, isOn: boolean, entityId: number): SimCommand | undefined {
   switch (event.button) {
     case 0: return { type: "CharacterControlCommand", activity: isOn ? { type: "CharacterShoot", entityId, isOn } : { type: "CharacterShoot", entityId, isOn } };
     default: return undefined;

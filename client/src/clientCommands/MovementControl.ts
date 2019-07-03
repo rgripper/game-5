@@ -1,7 +1,7 @@
 import { CharacterControlCommand, AxisState } from "../sim/sim";
 import { map, distinctUntilChanged, scan } from "rxjs/operators";
 import { Observable, merge } from "rxjs";
-import { Radians, getRadians } from "../sim/Geometry";
+import { getRadians } from "../sim/Geometry";
 
 type AxisTracker = { active?: AxisState; suppressed?: AxisState; };
 
@@ -16,8 +16,7 @@ const initialMovementTracker: MovementTracker = {
 
 type MapKeysToCommandsParams = {
   keyUps$: Observable<KeyboardEvent>; 
-  keyDowns$: Observable<KeyboardEvent>; 
-  playerId: number;
+  keyDowns$: Observable<KeyboardEvent>;
   entityId: number;
 }
 
@@ -28,7 +27,7 @@ export type MovementKeys = {
   right: string
 };
 
-export function mapMovementKeysToCommands (movementKeys: MovementKeys, { keyUps$, keyDowns$, playerId, entityId }: MapKeysToCommandsParams) {
+export function mapMovementKeysToCommands (movementKeys: MovementKeys, { keyUps$, keyDowns$, entityId }: MapKeysToCommandsParams) {
   const keyEvents$ = merge(
     keyUps$.pipe(map(event => ({ event, reducer: removeAxisState }))),
     keyDowns$.pipe(map(event => ({ event, reducer: setAxisState })))
@@ -39,7 +38,7 @@ export function mapMovementKeysToCommands (movementKeys: MovementKeys, { keyUps$
       (tracker, { event, reducer }) => reduceTrackerWithKey(movementKeys, tracker, event.key, reducer), initialMovementTracker
     ),
     distinctUntilChanged(),
-    map(movementTracker =>  mapKeyboard(movementTracker, playerId, entityId))
+    map(movementTracker =>  mapKeyboard(movementTracker, entityId))
   );
 }
 
@@ -123,9 +122,9 @@ function getDirection(movementTracker: MovementTracker): number {
   throw new Error('Must not get here');
 }
 
-function mapKeyboard(movementTracker: MovementTracker, playerId: number, entityId: number): CharacterControlCommand {
+function mapKeyboard(movementTracker: MovementTracker, entityId: number): CharacterControlCommand {
   const isOn = !!(movementTracker.vertical.active !== undefined || movementTracker.horizontal.active !== undefined);
-  console.log({ isOn, entityId });
+
   return {
     type: "CharacterControlCommand",
     activity: isOn 

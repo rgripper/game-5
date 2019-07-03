@@ -16,12 +16,12 @@ function createCommands() {
   const humanPlayerId = 1;
   const monsterPlayerId = 2;
 
-  const humanActor: Actor = { location: { x: 25, y: 25 }, playerId: humanPlayerId, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: getNewId(), type: "Actor" };
+  const humanActor: Actor = { location: { x: 25, y: 25 }, playerId: humanPlayerId, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" };
 
   const monsters: Actor[] = [
-    { location: { x: 125, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
-    { location: { x: 145, y: 145 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" },
-    { location: { x: 76, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: getNewId(), type: "Actor" }
+    { location: { x: 125, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" },
+    { location: { x: 145, y: 145 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" },
+    { location: { x: 76, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" }
   ]
 
   const actors = [humanActor, ...monsters];
@@ -35,8 +35,10 @@ function createCommands() {
     right: 'd'
   }
 
+  console.log('humanActor.id', humanActor.id);
+
   return {
-    controlCommands$: mapEventsToCommands(document, movementKeys, humanActor.playerId, humanActor.id),
+    controlCommands$: mapEventsToCommands({ target: document, movementKeys, entityId: humanActor.id }),
     initCommands$: from([
       ...actors.map(entity => ({ type: "AddEntity", entity } as SimCommand)),
       ...players.map(player => ({ type: "AddPlayer", player } as SimCommand))
@@ -100,8 +102,7 @@ function App () {
         tap<Diff[]>(diffs => {
           diffs.forEach(diff => applyDiffToWorld(clientWorld, diff));
           setDebuggedWorld({ ...clientWorld });
-        }),
-        processDiffs
+        })
       ).subscribe();
       
       pipelineClient.subscribeInput(commands$);
@@ -120,7 +121,7 @@ function App () {
     return (
       <div className="App" id="app">
         <div id="gameView"></div>
-        <DebugView world={debuggedWorld} position={debuggedPosition}  />
+        <DebugView worldState={debuggedWorld} position={debuggedPosition}  />
       </div>
     );
 }
