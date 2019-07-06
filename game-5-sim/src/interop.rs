@@ -5,7 +5,7 @@ use crate::geometry::Rect;
 use crate::world::WorldState;
 use crate::geometry::Radians;
 use crate::world::ID;
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 use wasm_bindgen::prelude::*;
 
@@ -32,11 +32,6 @@ pub struct JS_SimCommand {
 }
 
 #[wasm_bindgen]
-pub struct SimInterop {
-    world_state: WorldState,
-}
-
-#[wasm_bindgen]
 #[derive(Copy, Clone)]
 pub struct JS_Diff {
     pub delete_entity_id: Option<ID>,
@@ -51,6 +46,11 @@ pub struct JS_Diff {
 pub struct JS_WorldParams {
     pub width: i32,
     pub height: i32,
+}
+
+#[wasm_bindgen]
+pub struct SimInterop {
+    world_state: WorldState,
 }
 
 impl SimInterop {

@@ -1,5 +1,3 @@
-use std::f64::consts::PI;
-
 #[derive(Debug, Copy, Clone)]
 pub struct Point {
     pub x: f32, // from left to right
@@ -20,10 +18,6 @@ pub struct Rect {
 
 pub type Radians = f32;
 
-pub fn get_radians(angle: f32) -> Radians {
-    return (angle * (PI as f32))/ 180f32;
-}
-
 pub fn intersects (rect1: &Rect, rect2: &Rect) -> bool {
     return !(
       rect1.top_left.x > (rect2.top_left.x + rect2.size.width as f32)
@@ -39,11 +33,11 @@ pub fn intersects (rect1: &Rect, rect2: &Rect) -> bool {
 pub fn rotate_point(left_top: &Point, center: Point, direction: &Radians) -> Point {
   let sin = direction.sin();
   let cos = direction.cos();
-  let diffX = left_top.x - center.x;
-  let diffY = left_top.y - center.y;
+  let diff_x = left_top.x - center.x;
+  let diff_y = left_top.y - center.y;
   let result = Point { 
-    x: cos * diffX - sin * diffY + center.x, 
-    y: sin * diffX + cos * diffY + center.y
+    x: cos * diff_x - sin * diff_y + center.x, 
+    y: sin * diff_x + cos * diff_y + center.y
   };
 
   return result;

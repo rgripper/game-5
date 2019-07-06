@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use crate::geometry::{Rect, Radians};
 use crate::physics::{Velocity};
 
@@ -56,14 +56,14 @@ pub enum ProcessPayload {
 impl ProcessPayload {
     pub fn is_entity_move (&self) -> bool {
         match self {
-            EntityMove => true,
+            ProcessPayload::EntityMove { .. } => true,
             _ => false,
         }
     }
 
     pub fn is_entity_shoot (&self) -> bool {
         match self {
-            EntityShoot => true,
+            ProcessPayload::EntityShoot { .. } => true,
             _ => false,
         }
     }
