@@ -71,17 +71,8 @@ impl ProcessPayload {
 
 pub struct WorldState {
     pub new_id: ID,
-    pub rect: Rect,
+    pub boundaries: Rect,
     pub players: HashMap<ID, Player>,
     pub entities: HashMap<ID, Entity>,
     pub processes: HashMap<ID, Process>,
 }
-
-impl WorldState {
-    pub fn gen_new_id (mut self) -> ID {
-        let new_id = self.new_id;
-        self.new_id = self.new_id + 1;
-        return new_id;
-    }
-}
-

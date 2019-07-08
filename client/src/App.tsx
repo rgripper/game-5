@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { SimUpdate, SimCommand, Actor, WorldState, CreationCommand } from './sim/sim';
-import { bufferTime, scan, buffer, tap, map } from 'rxjs/operators';
+import { buffer, tap, map } from 'rxjs/operators';
 import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
 import { Observable, Subscriber, fromEvent, from, concat } from 'rxjs';
 import { Diff } from './sim/Diff';
-import { getRadians, Point } from './sim/Geometry';
+import { Point, Radians } from './sim/geometry';
 import { getNewId } from './sim/Identity';
 import { applyDiffToWorld } from './clientSim/world';
 import DebugView from './DebugView';
 import { createPipeline } from './SimClient';
+
+export function getRadians(angle: number): Radians {
+  return (angle * Math.PI)/ 180;
+}
 
 function createCommands() {
   const humanPlayerId = 1;

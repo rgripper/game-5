@@ -1,6 +1,6 @@
 import React from 'react';
 import { WorldState, Entity } from './sim/sim';
-import { Point, intersects } from './sim/Geometry';
+import { Point, intersects } from './sim/geometry';
 
 function EntityView ({ entity }: { entity: Entity }) {
     return <span>{JSON.stringify(entity)}</span>

@@ -58,7 +58,7 @@ impl SimInterop {
         SimInterop {
             world_state: WorldState {
                 new_id: 1,
-                rect: Rect {
+                boundaries: Rect {
                     top_left: Point { x: 0.0, y: 0.0 },
                     size: Size {
                         width: params.width,

@@ -6,6 +6,7 @@ mod physics;
 mod sim;
 mod behaviours;
 mod interop;
+mod affects;
 
 use crate::interop::{ SimInterop, JS_WorldParams };
 use wasm_bindgen::prelude::*;

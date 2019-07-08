@@ -1,20 +1,20 @@
 import { WorldParams } from "../server/pipeline";
-import { WorldState, SimCommand, updateWorld } from "./sim";
-import { Diff } from "./Diff";
+import { SimCommand, Diff, update_world } from "./sim";
+import { WorldState } from "./world";
 
 export class SimInterop {
-    private worldState: WorldState;
+    private world_state: WorldState;
 
     constructor({ size }: WorldParams) {
-        this.worldState = {
-            size,
+        this.world_state = {
+            boundaries: { top_left: { x: 0, y: 0 }, size },
             players: {},
-            activities: {}, 
+            processes: {}, 
             entities: {}, 
         }
     }
 
-    updateWorld(simCommands: SimCommand[]): Diff[] {
-        return updateWorld(this.worldState, simCommands);
+    update_world(sim_commands: SimCommand[]): Diff[] {
+        return update_world(this.world_state, sim_commands);
     }
 }

@@ -3,14 +3,14 @@ use crate::physics::Velocity;
 use crate::geometry::Radians;
 use crate::world::GenNewID;
 use crate::physics::{ move_point };
-use crate::geometry::{Point, Size, Rect, rotate_point };
+use crate::geometry::{ Point, Size, Rect, rotate_point };
 use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
-use crate::sim::{Diff};
+use crate::sim::{ Diff };
 
 // TODO: change word 'update' to something more appropriate?
 pub fn copy_update_entity_by_process_payload(entity: &Entity, process: &Process, gen_new_id: &GenNewID) -> Vec<Diff> {
     match process.payload {
-        ProcessPayload::EntityMove { velocity, direction } => move_entity(entity, &velocity, &direction),
+        ProcessPayload::EntityMove { velocity, direction } => vec![move_entity(entity, &velocity, &direction)],
         ProcessPayload::EntityShoot { cooldown, current_cooldown } => {
             if current_cooldown == 0 {
                 let shot_diffs = shoot_from(entity, gen_new_id(), gen_new_id());
@@ -38,16 +38,15 @@ pub fn copy_update_entity_by_process_payload(entity: &Entity, process: &Process,
     }
 }
 
-fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians) -> Vec<Diff> {
+fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians) -> Diff {
     let updated_entity = Entity {
-        id: entity.id,
         boundaries: Rect { 
             size: entity.boundaries.size,
             top_left: move_point(&entity.boundaries.top_left, velocity, direction)
         },
         ..*entity // TODO: do a real fix
     };
-    vec![Diff::UpsertEntity(updated_entity)]
+    Diff::UpsertEntity(updated_entity)
 }
 
 fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (Diff, Diff) {

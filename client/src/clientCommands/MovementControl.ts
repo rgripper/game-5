@@ -1,7 +1,7 @@
 import { CharacterControlCommand, AxisState } from "../sim/sim";
 import { map, distinctUntilChanged, scan } from "rxjs/operators";
 import { Observable, merge } from "rxjs";
-import { getRadians } from "../sim/Geometry";
+import { getRadians } from "../sim/geometry";
 
 type AxisTracker = { active?: AxisState; suppressed?: AxisState; };
 

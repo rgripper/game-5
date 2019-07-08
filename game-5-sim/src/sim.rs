@@ -1,6 +1,7 @@
+use crate::affects::affect_by_entity;
 use crate::behaviours::copy_update_entity_by_process_payload;
-use crate::geometry::{intersects, Radians};
-use crate::world::{Entity, EntityType, GenNewID, Process, ProcessPayload, Player, WorldState, ID};
+use crate::geometry::{ Radians };
+use crate::world::{Entity, GenNewID, Process, ProcessPayload, Player, WorldState, ID };
 
 #[derive(Debug, Copy, Clone)]
 pub enum Diff {
@@ -23,6 +24,8 @@ pub enum ActorCommand {
     Shoot(ID, Option<()>),
 }
 
+type SimCommand = ActorCommand;
+
 static mut NEW_ID: ID = 0;
 
 // TODO: increment world_state instead
@@ -32,8 +35,6 @@ fn gen_new_id () -> ID {
         NEW_ID
     }
 }
-
-type SimCommand = ActorCommand;
 
 pub fn update_world(
     world_state: &mut WorldState,
@@ -143,7 +144,7 @@ fn create_or_derive_process_payload (maybe_process: Option<&Process>, actor_id: 
     }
 }
 
-// TODO: maybe make immutable
+
 fn apply_diff_to_world(world_state: &mut WorldState, diff: &Diff) {
     match diff {
         Diff::UpsertEntity(entity) => {
@@ -175,39 +176,3 @@ fn apply_diff_to_world(world_state: &mut WorldState, diff: &Diff) {
         }
     }
 }
-
-// TODO: rewrite to return function?
-fn affect_by_entity(world_state: &WorldState, entity: &Entity) -> Vec<Diff> {
-    match entity.entity_type {
-        EntityType::Human => affect_by_actor(world_state, entity),
-        EntityType::Monster => affect_by_actor(world_state, entity),
-        EntityType::Projectile => affect_by_projectile(world_state, entity),
-    }
-}
-
-fn affect_by_actor(world_state: &WorldState, actor: &Entity) -> Vec<Diff> {
-    let affected_entities = world_state
-        .entities
-        .values()
-        .filter(|other| intersects(&other.boundaries, &actor.boundaries));
-    vec![]
-    //return affected_entities.map(|other| affect_entity_by_actor(world_state, actor, &other)).flatten().collect();
-}
-
-fn affect_by_projectile(world_state: &WorldState, projectile: &Entity) -> Vec<Diff> {
-    if !intersects(&projectile.boundaries, &world_state.rect) {
-        return vec![Diff::DeleteEntity(projectile.id)];
-    }
-
-    let affected_non_projectiles = world_state.entities.values().filter(|other| {
-        other.entity_type != EntityType::Projectile
-            && intersects(&other.boundaries, &projectile.boundaries)
-    });
-    vec![]
-    //return affected_non_projectiles.map(|other| affect_entity_by_projectile(world_state, projectile, &other)).flatten().collect();
-}
-
-// pub fn findAffectedActors (actors: impl Iterator<Item=Actor>, actor: &Actor) -> impl Iterator<Item = Actor> {
-//     return actors.filter(|x| intersects(&x.boundaries, &actor.boundaries));
-//     // return foo;
-// }
