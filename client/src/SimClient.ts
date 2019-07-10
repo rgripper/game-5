@@ -1,6 +1,6 @@
 import { Observable, Observer, Subscription } from "rxjs";
-import { Diff } from "./sim/Diff";
-import { SimCommand } from "./sim/sim";
+
+import { SimCommand, Diff } from "./sim/sim";
 import { SimServerEventData, WorldParams } from "./server/pipeline";
 
 type UpdateStreamParams = {

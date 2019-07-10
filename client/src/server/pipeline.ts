@@ -1,8 +1,7 @@
 import { bufferTime, scan, map, tap } from 'rxjs/operators';
 import { Observable, Observer } from 'rxjs';
-import { Diff } from '../sim/Diff';
 import { SimInterop } from '../sim/interop';
-import { SimCommand } from '../sim/sim';
+import { SimCommand, Diff } from '../sim/sim';
 
 export type WorldParams = {
     size: { width: number; height: number; };
@@ -18,7 +17,7 @@ type SimServerEvent = { data: SimServerEventData }
 function streamCommandsToSim(worldParams: WorldParams, commands$: Observable<SimCommand>): Observable<Diff[]> {
     const simInterop = new SimInterop(worldParams);
     const batchCommands = bufferTime<SimCommand>(10);
-    const runTickPerCommandBatch = map((commands: SimCommand[]) => simInterop.updateWorld(commands));
+    const runTickPerCommandBatch = map((commands: SimCommand[]) => simInterop.update_world(commands));
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }
 

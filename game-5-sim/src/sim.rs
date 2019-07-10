@@ -24,7 +24,15 @@ pub enum ActorCommand {
     Shoot(ID, Option<()>),
 }
 
-type SimCommand = ActorCommand;
+pub enum CreationCommand {
+    AddEntity(Entity),
+    AddPlayer(Player)
+}
+
+pub enum SimCommand {
+    Actor(ActorCommand),
+    Creation(CreationCommand)
+}
 
 static mut NEW_ID: ID = 0;
 
@@ -48,7 +56,6 @@ pub fn update_world(
         .collect();
 
     for (process_id, entity_id) in pairs {
-        //
         let process_diffs = world_state
             .entities
             .get(&entity_id)
@@ -88,44 +95,54 @@ pub fn update_world(
 
 fn produce_diff_from_command(
     world_state: &WorldState,
-    command: &SimCommand,
+    sim_command: &SimCommand,
     gen_new_id: &GenNewID,
 ) -> Option<Diff> {
-    match command {
-        ActorCommand::Move(actor_id, option) => match option {
-            Some (payload) => {
-                let maybe_found_process: Option<&Process> = world_state
-                    .processes
-                    .values()
-                    .find(|p| p.payload.is_entity_move() && p.entity_id == *actor_id);
-                let new_payload = ProcessPayload::EntityMove {
-                    direction: payload.direction,
-                    velocity: 2.0,
-                };
-                let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
-                Some(Diff::UpsertProcess(process))
-            },
-            None => world_state
-                .processes
-                .values()
-                .find(|p| p.payload.is_entity_move() && p.entity_id == *actor_id)
-                .map(|p| Diff::DeleteProcess(p.id)),
-        },
-        ActorCommand::Shoot(actor_id, option) => match option {
-            Some(_) => {
-                let maybe_found_process: Option<&Process> = world_state
-                    .processes
-                    .values()
-                    .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id);
-                let new_payload = ProcessPayload::EntityShoot { cooldown: 5, current_cooldown: 0 };
-                let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
-                Some(Diff::UpsertProcess(process))
-            },
-            None => world_state
-                .processes
-                .values()
-                .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id)
-                .map(|p| Diff::DeleteProcess(p.id)),
+    match sim_command {
+        SimCommand::Actor (command) => {
+            match command {
+                ActorCommand::Move(actor_id, option) => match option {
+                    Some (payload) => {
+                        let maybe_found_process: Option<&Process> = world_state
+                            .processes
+                            .values()
+                            .find(|p| p.payload.is_entity_move() && p.entity_id == *actor_id);
+                        let new_payload = ProcessPayload::EntityMove {
+                            direction: payload.direction,
+                            velocity: 2.0,
+                        };
+                        let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
+                        Some(Diff::UpsertProcess(process))
+                    },
+                    None => world_state
+                        .processes
+                        .values()
+                        .find(|p| p.payload.is_entity_move() && p.entity_id == *actor_id)
+                        .map(|p| Diff::DeleteProcess(p.id)),
+                },
+                ActorCommand::Shoot(actor_id, option) => match option {
+                    Some(_) => {
+                        let maybe_found_process: Option<&Process> = world_state
+                            .processes
+                            .values()
+                            .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id);
+                        let new_payload = ProcessPayload::EntityShoot { cooldown: 5, current_cooldown: 0 };
+                        let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
+                        Some(Diff::UpsertProcess(process))
+                    },
+                    None => world_state
+                        .processes
+                        .values()
+                        .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id)
+                        .map(|p| Diff::DeleteProcess(p.id)),
+                }
+            }
+        }
+        SimCommand::Creation (command) => {
+            match command {
+                CreationCommand::AddEntity (entity) => Some(Diff::UpsertEntity(*entity)),
+                CreationCommand::AddPlayer (player) => Some(Diff::UpsertPlayer(*player))
+            }
         }
     }
 }

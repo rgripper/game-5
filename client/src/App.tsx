@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import * as PIXI from 'pixi.js';
-import { SimUpdate, SimCommand, Actor, WorldState, CreationCommand } from './sim/sim';
+import { SimCommand, gen_new_id, Diff } from './sim/sim';
 import { buffer, tap, map } from 'rxjs/operators';
 import { mapEventsToCommands } from './clientCommands/mapEventsToCommands';
 import { renderDiffs, renderWorld as renderInitialWorld } from './rendering/rendering';
 import { Observable, Subscriber, fromEvent, from, concat } from 'rxjs';
-import { Diff } from './sim/Diff';
 import { Point, Radians } from './sim/geometry';
-import { getNewId } from './sim/Identity';
-import { applyDiffToWorld } from './clientSim/world';
 import DebugView from './DebugView';
 import { createPipeline } from './SimClient';
+import { Entity, EntityType, WorldState, Player } from './sim/world';
+import { apply_diff_to_world } from './clientSim/world';
 
 export function getRadians(angle: number): Radians {
   return (angle * Math.PI)/ 180;
@@ -20,17 +19,17 @@ function createCommands() {
   const humanPlayerId = 1;
   const monsterPlayerId = 2;
 
-  const humanActor: Actor = { location: { x: 25, y: 25 }, playerId: humanPlayerId, maxHealth: 100, currentHealth: 100, unitType: "Human", size: { width: 28, height: 28 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" };
+  const humanActor: Entity = { boundaries: { size: { width: 28, height: 28 }, top_left: { x: 25, y: 25 } }, player_id: humanPlayerId, health: { max: 100, current: 100 } , entity_type: EntityType.Human, rotation: getRadians(270), id: 1000 + gen_new_id() };
 
-  const monsters: Actor[] = [
-    { location: { x: 125, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" },
-    { location: { x: 145, y: 145 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" },
-    { location: { x: 76, y: 125 }, playerId: monsterPlayerId, maxHealth: 10, currentHealth: 10, unitType: "Monster", size: { width: 20, height: 20 }, rotation: getRadians(270), id: 1000 + getNewId(), type: "Actor" }
+  const monsters: Entity[] = [
+    { boundaries: { size: { width: 20, height: 20 }, top_left: { x: 125, y: 125 } }, player_id: monsterPlayerId, health: { max: 10, current: 10 }, entity_type: EntityType.Monster, rotation: getRadians(270), id: 1000 + gen_new_id() },
+    { boundaries: { size: { width: 20, height: 20 }, top_left: { x: 145, y: 145 } }, player_id: monsterPlayerId, health: { max: 10, current: 10 }, entity_type: EntityType.Monster, rotation: getRadians(270), id: 1000 + gen_new_id() },
+    { boundaries: { size: { width: 20, height: 20 }, top_left: { x: 76, y: 125 } }, player_id: monsterPlayerId, health: { max: 10, current: 10 }, entity_type: EntityType.Monster, rotation: getRadians(270), id: 1000 + gen_new_id() }
   ]
 
   const actors = [humanActor, ...monsters];
 
-  const players = [{ id: humanPlayerId }, { id: monsterPlayerId }];
+  const players: Player[] = [{ id: humanPlayerId }, { id: monsterPlayerId }];
 
   const movementKeys = {
     forward: 'w',
@@ -44,17 +43,17 @@ function createCommands() {
   return {
     controlCommands$: mapEventsToCommands({ target: document, movementKeys, entityId: humanActor.id }),
     initCommands$: from([
-      ...actors.map(entity => ({ type: "AddEntity", entity } as SimCommand)),
-      ...players.map(player => ({ type: "AddPlayer", player } as SimCommand))
+      ...actors.map(entity => ({ type: "Creation", command: { type: "AddEntity", entity } } as SimCommand)),
+      ...players.map(player => ({ type: "Creation", command: { type: "AddPlayer", player } } as SimCommand))
     ])
   }
 }
 
 function App () {
-    const initialWorld = {
-      size: { width: 300, height: 300 },
+    const initialWorld: WorldState = {
+      boundaries: { top_left: { x: 0, y: 0 }, size: { width: 300, height: 300 } },
       players: {},
-      activities: {}, 
+      processes: {}, 
       entities: {}, 
     };
 
@@ -68,15 +67,10 @@ function App () {
       // });
       
       const gameView = document.getElementById('gameView')!;
-      const app = new PIXI.Application({backgroundColor : 0xFFAAFF, ...initialWorld.size});
+      const app = new PIXI.Application({backgroundColor : 0xFFAAFF, ...initialWorld.boundaries.size});
       gameView.appendChild(app.view);
 
-      const initialOutcome: SimUpdate = {
-        diffs: [],
-        world: initialWorld
-      } 
-
-      renderInitialWorld(initialOutcome.world, app);
+      renderInitialWorld(initialWorld, app);
 
       const commandSet = createCommands();
 
@@ -91,20 +85,20 @@ function App () {
       const processDiffs = tap<Diff[]>(diffs => renderDiffs(diffs, app));
       
       const clientWorld: WorldState = {
-        activities: { ...initialWorld.activities },
+        processes: { ...initialWorld.processes },
         entities: { ...initialWorld.entities },
         players: { ...initialWorld.players },
-        size: { ...initialWorld.size }
+        boundaries: { ...initialWorld.boundaries }
       };
     
-      const pipelineClient = createPipeline({ worldParams: { size: initialWorld.size } });
+      const pipelineClient = createPipeline({ worldParams: { size: initialWorld.boundaries.size } });
       
       const subscription = pipelineClient.output$.pipe(
         batchDiffBatchesPerFrame,
         collectDiffs,
         processDiffs,
         tap<Diff[]>(diffs => {
-          diffs.forEach(diff => applyDiffToWorld(clientWorld, diff));
+          diffs.forEach(diff => apply_diff_to_world(clientWorld, diff));
           setDebuggedWorld({ ...clientWorld });
         })
       ).subscribe();

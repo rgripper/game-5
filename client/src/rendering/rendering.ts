@@ -1,19 +1,17 @@
-import { Diff } from "../sim/Diff";
 import humanImage from '../assets/Human.png';
 import monsterImage from '../assets/Monster.png';
 import projectileImage from '../assets/Projectile.png';
-import { WorldState, Entity } from "../sim/sim";
 import * as PIXI from 'pixi.js';
+import { Entity, WorldState, EntityType } from "../sim/world";
+import { Diff } from '../sim/sim';
 
 const renderedEntities = new Map<number, RenderedEntity>();
 
 function getImageByEntityType(entity: Entity): string {
-  switch (entity.type) {
-    case "Actor": switch(entity.unitType) {
-      case "Human": return humanImage;
-      case "Monster": return monsterImage;
-    };
-    case "Projectile": return projectileImage;
+  switch (entity.entity_type) {
+    case EntityType.Human: return humanImage;
+    case EntityType.Monster: return monsterImage;
+    case EntityType.Projectile: return projectileImage;
   }
 }
 
@@ -28,12 +26,12 @@ function createRenderedEntity (entity: Entity, app: PIXI.Application, image: str
   sprite.anchor.y = 0.5;
   sprite.scale.x /= 6;
   sprite.scale.y /= 6;
-  sprite.x = entity.size.width / 2;
-  sprite.y = entity.size.height / 2;
+  sprite.x = entity.boundaries.size.width / 2;
+  sprite.y = entity.boundaries.size.height / 2;
 
   const collisionRect = new PIXI.Graphics();
   collisionRect.lineStyle(1, 0x90CAF9, 0.8);
-  collisionRect.drawRect(0, 0, entity.size.width, entity.size.height);
+  collisionRect.drawRect(0, 0, entity.boundaries.size.width, entity.boundaries.size.height);
 
   const container = new PIXI.Container();
   container.addChild(sprite);
@@ -53,30 +51,28 @@ function createRenderedEntity (entity: Entity, app: PIXI.Application, image: str
 
 // TODO: convert to Diffs streaming somehow?
 export function renderWorld(world: WorldState, app: PIXI.Application) {
-  const initialDiffs: Diff[] = Object.values(world.entities).map(entity => ({ target: entity, targetType: 'Entity', type: 'Upsert' }));
+  const initialDiffs: Diff[] = Object.values(world.entities).map(entity => ({ type: 'UpsertEntity', entity }));
   renderDiffs(initialDiffs, app);
 }
 
 export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
   diffs.forEach(diff => {
-    if (diff.targetType !== "Entity") {
+    if (diff.type !== "UpsertEntity" && diff.type !== "DeleteEntity") {
       return;
     }
     switch(diff.type) {
-      case "Upsert": {
-        const re = renderedEntities.get(diff.target.id) || createRenderedEntity(diff.target, app, getImageByEntityType(diff.target));
-        if (diff.target.type === "Actor") {
-          re.container.alpha = diff.target.currentHealth / diff.target.maxHealth;
-        }
-        re.main.rotation = diff.target.rotation;
-        re.container.x = diff.target.location.x;
-        re.container.y = diff.target.location.y;
+      case "UpsertEntity": {
+        const re = renderedEntities.get(diff.entity.id) || createRenderedEntity(diff.entity, app, getImageByEntityType(diff.entity));
+        re.container.alpha = diff.entity.health.current / diff.entity.health.max;
+        re.main.rotation = diff.entity.rotation;
+        re.container.x = diff.entity.boundaries.top_left.x;
+        re.container.y = diff.entity.boundaries.top_left.y;
         return;
       }
-      case "Delete": {
-        const re = renderedEntities.get(diff.targetId)!;
+      case "DeleteEntity": {
+        const re = renderedEntities.get(diff.id)!;
         app.stage.removeChild(re.container);
-        renderedEntities.delete(diff.targetId);
+        renderedEntities.delete(diff.id);
         return;
       }
     }

@@ -1,32 +1,32 @@
-import { WorldState } from "../sim/sim";
-import { Diff } from "../sim/Diff";
+import { WorldState } from "../sim/world";
+import { Diff } from "../sim/sim";
 
-export function applyDiffToWorld (world: WorldState, diff: Diff): void {
+export function apply_diff_to_world (world: WorldState, diff: Diff): void {
   switch (diff.type) {
-    case "Upsert": {
-      if (diff.targetType == 'Entity') {
-        world.entities[diff.target.id] = diff.target;
+      case "UpsertEntity": {
+          world.entities[diff.entity.id] = diff.entity;
+          break;
       }
-      else if (diff.targetType == 'Activity') {
-        world.activities[diff.target.id] = diff.target;
+      case "UpsertPlayer": {
+          world.players[diff.player.id] = diff.player;
+          break;
       }
-      else if (diff.targetType == 'Player') {
-        world.players[diff.target.id] = diff.target;
+      case "UpsertProcess": {
+          world.processes[diff.process.id] = diff.process;
+          break;
       }
-      break;
-    }
-    case "Delete": {
-      if (diff.targetType === 'Entity') {
-        delete world.entities[diff.targetId];
-        Object.values(world.activities).filter(x => x.entityId === diff.targetId).forEach(x => delete world.activities[x.id]);
+      case "DeleteEntity": {
+          delete world.entities[diff.id];
+          Object.values(world.processes).filter(x => x.entity_id === diff.id).forEach(x => delete world.processes[x.id]);
+          break;
       }
-      else if (diff.targetType == 'Activity') {
-        delete world.activities[diff.targetId];
+      case "DeleteProcess": {
+          delete world.processes[diff.id];
+          break;
       }
-      else if (diff.targetType == 'Player') {
-        delete world.players[diff.targetId];
+      case "DeletePlayer": {
+          delete world.players[diff.id];
+          break;
       }
-      break;
-    }
   }
 }

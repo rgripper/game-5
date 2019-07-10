@@ -1,12 +1,12 @@
-import { CharacterControlCommand, AxisState } from "../sim/sim";
+
 import { map, distinctUntilChanged, scan } from "rxjs/operators";
 import { Observable, merge } from "rxjs";
-import { getRadians } from "../sim/geometry";
+import { SimCommand } from "../sim/sim";
+import { getRadians } from "../App";
 
+enum AxisState { Negative, Positive }
 type AxisTracker = { active?: AxisState; suppressed?: AxisState; };
-
 type MovementTracker = { vertical: AxisTracker; horizontal: AxisTracker; };
-
 type AxisTrackerReducer = (tracker: AxisTracker, stateToSet: AxisState) => AxisTracker;
 
 const initialMovementTracker: MovementTracker = {
@@ -122,22 +122,27 @@ function getDirection(movementTracker: MovementTracker): number {
   throw new Error('Must not get here');
 }
 
-function mapKeyboard(movementTracker: MovementTracker, entityId: number): CharacterControlCommand {
+function mapKeyboard(movementTracker: MovementTracker, actor_id: number): SimCommand {
   const isOn = !!(movementTracker.vertical.active !== undefined || movementTracker.horizontal.active !== undefined);
 
-  return {
-    type: "CharacterControlCommand",
-    activity: isOn 
-      ? {
-        type: "CharacterMove",  
-        entityId,
-        isOn,
-        direction: getRadians(getDirection(movementTracker))
+  return isOn 
+    ? {
+      type: "Actor",
+      command: {
+        type: "ActorMoveCommand",  
+        actor_id,
+        isOn: true,
+        payload: {
+          direction: getRadians(getDirection(movementTracker))
+        }
       }
-      : {
-        type: "CharacterMove",  
-        entityId,
-        isOn
+    }
+    : {
+      type: "Actor",
+      command: {
+        type: "ActorMoveCommand",
+        actor_id,
+        isOn: false
       }
-  }
+    }
 }
