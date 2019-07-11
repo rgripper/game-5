@@ -16,15 +16,15 @@ export function mapEventsToCommands ({ target, movementKeys, entityId }: MapEven
   
   const shootingCommands$ = 
     merge(
-      keyDowns$.pipe(filter(e => e.key === " "), map(e => ({ type: "Actor", command: { type: "ActorMoveCommand", actor_id: entityId, isOn: true } } as SimCommand))),
-      keyUps$.pipe(filter(e => e.key === " "), map(e => ({ type: "Actor", command: { type: "ActorMoveCommand", actor_id: entityId, isOn: false } } as SimCommand)))
+      keyDowns$.pipe(filter(e => e.key === " "), map(e => SimCommand.Actor({ type: "ActorShootCommand", actor_id: entityId, isOn: true }))),
+      keyUps$.pipe(filter(e => e.key === " "), map(e => SimCommand.Actor({ type: "ActorShootCommand", actor_id: entityId, isOn: false })))
     );
 
-  // const mouseCommandsOn$ = fromEvent<MouseEvent>(document, 'mousedown').pipe(map(event => mapMouse(event, true, playerId, entityId)));
-  // const mouseCommandsOff$ = fromEvent<MouseEvent>(document, 'mouseup').pipe(map(event => mapMouse(event, false, playerId, entityId)));
+  // const mouseCommandsOn$ = fromEvent<MouseEvent>(document, 'mousedown').pipe(map(event => mapMouse(event, true, entityId)));
+  // const mouseCommandsOff$ = fromEvent<MouseEvent>(document, 'mouseup').pipe(map(event => mapMouse(event, false, entityId)));
   // const mouseCommands$ = merge(mouseCommandsOn$, mouseCommandsOff$).pipe(filter(x => x !== null)) as Observable<ClientCommand>;
   
-  const allCommands$: Observable<SimCommand> = merge(movementCommands$, shootingCommands$)//, mouseCommands$);
+  const allCommands$ = merge(movementCommands$, shootingCommands$)//, mouseCommands$);
 
   return allCommands$;
 }

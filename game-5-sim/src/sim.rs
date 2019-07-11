@@ -147,16 +147,16 @@ fn produce_diff_from_command(
     }
 }
 
-fn create_or_derive_process_payload (maybe_process: Option<&Process>, actor_id: &ID, payload: ProcessPayload, gen_new_id: &GenNewID) -> Process {
+fn create_or_derive_process_payload (maybe_process: Option<&Process>, entity_id: &ID, payload: ProcessPayload, gen_new_id: &GenNewID) -> Process {
     match maybe_process {
         Some(process) => Process {
             payload: payload,
             ..*process
         },
         None => Process {
-            payload: payload,
             id: gen_new_id(),
-            entity_id: *actor_id,
+            payload: payload,
+            entity_id: *entity_id,
         }
     }
 }

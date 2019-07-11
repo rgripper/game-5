@@ -59,12 +59,13 @@ fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (D
 
     // TODO: impl on top of Entity?
     let rotated_shooting_point = rotate_point(&shooting_point, center, &owner.rotation);
+    let offset_point = Point { x: owner.boundaries.top_left.x + rotated_shooting_point.x, y: owner.boundaries.top_left.y + rotated_shooting_point.y };
 
     let projectile = Entity { 
         id: new_projectile_id, 
         boundaries: Rect {  // TODO: generate shooting point
             size: Size { width: 4, height: 2 },
-            top_left: rotated_shooting_point
+            top_left: offset_point
         },
         health: Health {
             current: 1,
@@ -78,7 +79,7 @@ fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (D
     let projectile_activity = Process { 
         id: new_activity_id,
         entity_id: projectile.id,
-        payload: ProcessPayload::EntityShoot { cooldown: 5, current_cooldown: 0 },
+        payload: ProcessPayload::EntityMove { direction: owner.rotation, velocity: 2.0 },
     };
 
     return (

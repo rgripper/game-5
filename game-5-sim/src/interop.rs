@@ -1,4 +1,4 @@
-use crate::sim::{ update_world, ActorCommand, ActorMovePayload, Diff };
+use crate::sim::{ update_world, ActorCommand, ActorMovePayload, Diff, SimCommand };
 use crate::geometry::Size;
 use crate::geometry::Point;
 use crate::geometry::Rect;
@@ -91,6 +91,7 @@ impl SimInterop {
                     }
                 }
             })
+            .map(SimCommand::Actor)
             .collect();
 
         let diffs: Vec<Diff> = update_world(&mut self.world_state, &sim_commands);

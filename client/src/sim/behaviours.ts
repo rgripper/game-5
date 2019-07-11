@@ -56,12 +56,13 @@ function shoot_from (owner: Entity, new_projectile_id: ID, new_activity_id: ID):
     let shooting_point: Point = { x: owner_size.width + 20.0, y: owner_size.height - 2.0 };
     let center: Point = { x: owner_size.width / 2.0, y: owner_size.height / 2.0 };
     let rotated_shooting_point = rotate_point(shooting_point, center, owner.rotation);
+    let offset_point = { x: owner.boundaries.top_left.x + rotated_shooting_point.x, y: owner.boundaries.top_left.y + rotated_shooting_point.y };
 
     let projectile: Entity = { 
         id: new_projectile_id, 
         boundaries: {  // TODO: generate shooting point
             size: { width: 4, height: 2 },
-            top_left: rotated_shooting_point
+            top_left: offset_point
         },
         health: {
             current: 1,
@@ -75,7 +76,7 @@ function shoot_from (owner: Entity, new_projectile_id: ID, new_activity_id: ID):
     let projectile_activity: Process = { 
         id: new_activity_id,
         entity_id: projectile.id,
-        payload: { type: "EntityShoot", cooldown: 5, current_cooldown: 0 },
+        payload: { type: "EntityMove", direction: owner.rotation, velocity: 2 },
     };
 
     return [

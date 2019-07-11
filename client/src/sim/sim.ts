@@ -1,5 +1,7 @@
 import { ID, Process, Player, Entity, WorldState, GenNewID, ProcessPayload } from "./world";
 import { Radians } from "./geometry";
+import { affect_by_entity } from "./affects";
+import { copy_update_entity_by_process_payload } from "./behaviours";
 
 export type Diff =
 | {
@@ -56,6 +58,11 @@ export type SimCommand =
     command: CreationCommand
 }
 
+export const SimCommand = {
+    Actor: (command: ActorCommand): SimCommand => ({ type: "Actor", command }),
+    Creation: (command: CreationCommand): SimCommand => ({ type: "Creation", command }),
+}
+
 let NEW_ID: ID = 0;
 
 // TODO: increment world_state instead, remove from global
@@ -65,26 +72,19 @@ export function gen_new_id (): ID {
 }
 
 export function update_world (world_state: WorldState, sim_commands: SimCommand[]): Diff[] {
-    //const prevProcesses = Object.values(world_state.processes);
-    // const diffs1 = prevProcesses.reduce((diffs, item) => {
-    //     const upd = performProcess(world_state, item);
-    //     return { world: upd.world, diffs: [...simUpdate.diffs, ...upd.diffs] };
-    // }, [] as Diff[])
+    const process_result_diffs = Object.values(world_state.processes).map(process => {
+        const entity = world_state.entities[process.entity_id];
+        const entity_update_diffs = copy_update_entity_by_process_payload(entity, process, gen_new_id);
+        entity_update_diffs.map(diff => apply_diff_to_world(world_state, diff));
+        const entity_affect_diffs = affect_by_entity(world_state, entity);
+        entity_affect_diffs.map(diff => apply_diff_to_world(world_state, diff));
+        return [...entity_update_diffs, ...entity_affect_diffs];
+    }).flat();
 
-    const processDiffs = sim_commands.map(c => produce_diff_from_command(world_state, c, gen_new_id)) as Diff[];
-    processDiffs.forEach(diff => apply_diff_to_world(world_state, diff));
+    const process_diffs: Diff[] = sim_commands.map(c => produce_diff_from_command(world_state, c, gen_new_id)).filter(d => d !== undefined) as Diff[];
+    process_diffs.forEach(diff => apply_diff_to_world(world_state, diff));
 
-    // // TODO in Rust
-    // const addEntityDiffs = sim_commands.filter(c => c.type === "AddEntity").map(c => ({ type: "Upsert", targetType: "Entity", target: (c as AddEntity).entity } as Diff));
-    // addEntityDiffs.forEach(diff => apply_diff_to_world(world_state, diff));
-
-    // // TODO in Rust
-    // const addPlayerDiffs = sim_commands.filter(c => c.type === "AddPlayer").map(c => ({ type: "Upsert", targetType: "Player", target: (c as AddPlayer).player } as Diff));
-    // addPlayerDiffs.forEach(diff => apply_diff_to_world(world_state, diff));
-
-    //const allDiffs = [...simUpdate1.diffs, ...activityDiffs, ...addEntityDiffs, ...addPlayerDiffs];
-    //return allDiffs;
-    return [...processDiffs];
+    return [...process_result_diffs, ...process_diffs];
 }
   
 function produce_diff_from_command(
@@ -92,7 +92,6 @@ function produce_diff_from_command(
     sim_command: SimCommand,
     gen_new_id: GenNewID
 ): Diff | undefined {
-    console.log("sc", sim_command)
     switch (sim_command.type) {
         case "Creation": {
             let { command } = sim_command;
@@ -145,7 +144,7 @@ function produce_diff_from_command(
     }
 }
 
-function create_or_derive_process_payload (maybe_process: Process | undefined, actor_id: ID, payload: ProcessPayload, gen_new_id: GenNewID): Process {
+function create_or_derive_process_payload (maybe_process: Process | undefined, entity_id: ID, payload: ProcessPayload, gen_new_id: GenNewID): Process {
     if (maybe_process !== undefined) {
         return {
             ...maybe_process,
@@ -154,9 +153,9 @@ function create_or_derive_process_payload (maybe_process: Process | undefined, a
     }
     else {
         return {
-            payload,
             id: gen_new_id(),
-            entity_id: actor_id,
+            payload,
+            entity_id,
         };
     }
 }

@@ -23,11 +23,10 @@ function affect_by_projectile(world_state: WorldState, projectile: Entity): Diff
         return [{ type: "DeleteEntity", id: projectile.id }]
     }
 
-    let affected_non_projectiles = Object.values(world_state.entities).filter(other => {
-        other.entity_type != EntityType.Projectile
-            && intersects(other.boundaries, projectile.boundaries)
-    });
-    
+    let affected_non_projectiles = Object.values(world_state.entities).filter(other => 
+        other.entity_type !== EntityType.Projectile
+            && intersects(other.boundaries, projectile.boundaries));
+   
     return affected_non_projectiles
         .map(other => affect_non_projectile_by_projectile(projectile, other))
         .flat();
