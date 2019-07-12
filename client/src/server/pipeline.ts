@@ -27,7 +27,6 @@ function listenForCommands(): Observable<SimCommand> {
             if (event.data.type !== 'SimCommand') {
                 return;
             }
-            console.log('SimCommand');
             o.next(event.data.command as SimCommand);
         });
         addEventListener('messageerror', (event: MessageEvent) => o.error({ error: 'Failed to process message', event }));

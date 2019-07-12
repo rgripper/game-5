@@ -4,8 +4,19 @@ import projectileImage from '../assets/Projectile.png';
 import * as PIXI from 'pixi.js';
 import { Entity, WorldState, EntityType } from "../sim/world";
 import { Diff } from '../sim/sim';
+import { Observable, Subscriber, pipe } from 'rxjs';
+import { buffer, map, tap } from 'rxjs/operators';
 
 const renderedEntities = new Map<number, RenderedEntity>();
+
+export function createRenderingPipe(app: PIXI.Application) {
+  const frames$: Observable<void> = Observable.create((subscriber: Subscriber<void>) => {
+    app.ticker.add(() => subscriber.next())
+  });
+  const batchDiffBatchesPerFrame = buffer<Diff[]>(frames$);
+  const collectDiffs = map((diffs: Diff[][]) => diffs.flat());
+  return pipe(batchDiffBatchesPerFrame, collectDiffs, tap(diffs => renderDiffs(diffs, app)));
+}
 
 function getImageByEntityType(entity: Entity): string {
   switch (entity.entity_type) {
@@ -47,12 +58,6 @@ function createRenderedEntity (entity: Entity, app: PIXI.Application, image: str
   renderedEntities.set(entity.id, renderedEntity);
 
   return renderedEntity;
-}
-
-// TODO: convert to Diffs streaming somehow?
-export function renderWorld(world: WorldState, app: PIXI.Application) {
-  const initialDiffs: Diff[] = Object.values(world.entities).map(entity => ({ type: 'UpsertEntity', entity }));
-  renderDiffs(initialDiffs, app);
 }
 
 export function renderDiffs(diffs: Diff[], app: PIXI.Application) {

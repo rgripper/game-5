@@ -2,7 +2,7 @@
 import { map, distinctUntilChanged, scan } from "rxjs/operators";
 import { Observable, merge } from "rxjs";
 import { SimCommand } from "../sim/sim";
-import { getRadians } from "../App";
+import { getRadians } from "./createCommands";
 
 enum AxisState { Negative, Positive }
 type AxisTracker = { active?: AxisState; suppressed?: AxisState; };
