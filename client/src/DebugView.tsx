@@ -1,6 +1,6 @@
 import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Point, intersects } from "./sim/geometry";
-import { Entity, WorldState, EntityType } from "./sim/world";
+import { Entity, WorldState, BehaviourType } from "./sim/world";
 import { fromEvent } from "rxjs";
 import { tap } from "rxjs/operators";
 import { Diff } from "./sim/sim";
@@ -27,7 +27,7 @@ export default function({ worldState, children }: PropsWithChildren<{ worldState
 
       <ul style={{ listStyleType: "none" }}>
         {Object.values(worldState.entities)
-          .filter(x => x.entity_type === EntityType.Human)
+          .filter(x => x.behaviour_type === BehaviourType.Actor)
           .map(x => (
             <li key={x.id}>{JSON.stringify(x)}</li>
           ))}

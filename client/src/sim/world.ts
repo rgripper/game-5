@@ -10,18 +10,25 @@ export type Health = {
     current: number;
 }
 
-export enum EntityType {
-    Human, 
+export enum BehaviourType {
+    Actor,
+    Projectile,
+}
+
+export enum ModelType {
+    Human,
     Monster,
     Projectile,
 }
+
 
 export type Entity = {
     id: ID;
     health: Health;
     boundaries: Rect;
     rotation: Radians;
-    entity_type: EntityType,
+    model_type: ModelType;
+    behaviour_type: BehaviourType,
     player_id: ID,
 }
 

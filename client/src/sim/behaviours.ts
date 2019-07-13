@@ -1,4 +1,4 @@
-import { Entity, ID, Process, GenNewID, EntityType } from "./world";
+import { Entity, ID, Process, GenNewID, BehaviourType, ModelType } from "./world";
 import { Diff } from "./sim";
 import { Velocity, move_point } from "./physics";
 import { Radians, Point, rotate_point } from "./geometry";
@@ -68,7 +68,8 @@ function shoot_from (owner: Entity, new_projectile_id: ID, new_activity_id: ID):
             current: 1,
             max: 1
         },
-        entity_type: EntityType.Projectile,
+        model_type: ModelType.Projectile,
+        behaviour_type: BehaviourType.Projectile,
         player_id: owner.player_id,
         rotation: owner.rotation, 
     };

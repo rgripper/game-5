@@ -4,7 +4,7 @@ use crate::geometry::Radians;
 use crate::world::GenNewID;
 use crate::physics::{ move_point };
 use crate::geometry::{ Point, Size, Rect, rotate_point };
-use crate::world::{ Health, Entity, EntityType, Process, ProcessPayload };
+use crate::world::{ Health, Entity, BehaviourType, Process, ProcessPayload, ModelType };
 use crate::sim::{ Diff };
 
 // TODO: change word 'update' to something more appropriate?
@@ -71,7 +71,8 @@ fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (D
             current: 1,
             max: 1
         },
-        entity_type: EntityType::Projectile,
+        model_type: ModelType::Projectile,
+        behaviour_type: BehaviourType::Projectile,
         player_id: owner.player_id,
         rotation: owner.rotation, 
     };

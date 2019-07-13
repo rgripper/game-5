@@ -13,8 +13,14 @@ pub struct Health {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum EntityType {
-    Human, 
+pub enum BehaviourType {
+    Actor,
+    Projectile,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ModelType {
+    Human,
     Monster,
     Projectile,
 }
@@ -25,7 +31,8 @@ pub struct Entity {
     pub health: Health,
     pub boundaries: Rect,
     pub rotation: Radians,
-    pub entity_type: EntityType,
+    pub model_type: ModelType,
+    pub behaviour_type: BehaviourType,
     pub player_id: ID,
 }
 

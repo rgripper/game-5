@@ -1,12 +1,11 @@
 use crate::geometry::intersects;
 use crate::sim::Diff;
-use crate::world::{ Entity, EntityType, WorldState, Health };
+use crate::world::{ Entity, BehaviourType, WorldState, Health };
 
 pub fn affect_by_entity(world_state: &WorldState, entity: &Entity) -> Vec<Diff> {
-    match entity.entity_type {
-        EntityType::Human => affect_by_actor(world_state, entity),
-        EntityType::Monster => affect_by_actor(world_state, entity),
-        EntityType::Projectile => affect_by_projectile(world_state, entity),
+    match entity.behaviour_type {
+        BehaviourType::Actor => affect_by_actor(world_state, entity),
+        BehaviourType::Projectile => affect_by_projectile(world_state, entity),
     }
 }
 
@@ -24,7 +23,7 @@ fn affect_by_projectile(world_state: &WorldState, projectile: &Entity) -> Vec<Di
     }
 
     let affected_non_projectiles = world_state.entities.values().filter(|other| {
-        other.entity_type != EntityType::Projectile
+        other.behaviour_type != BehaviourType::Projectile
             && intersects(&other.boundaries, &projectile.boundaries)
     });
     

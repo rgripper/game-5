@@ -2,7 +2,7 @@ import humanImage from '../assets/Human.png';
 import monsterImage from '../assets/Monster.png';
 import projectileImage from '../assets/Projectile.png';
 import * as PIXI from 'pixi.js';
-import { Entity, WorldState, EntityType } from "../sim/world";
+import { Entity, ModelType } from "../sim/world";
 import { Diff } from '../sim/sim';
 import { Observable, Subscriber, pipe } from 'rxjs';
 import { buffer, map, tap } from 'rxjs/operators';
@@ -18,11 +18,11 @@ export function createRenderingPipe(app: PIXI.Application) {
   return pipe(batchDiffBatchesPerFrame, collectDiffs, tap(diffs => renderDiffs(diffs, app)));
 }
 
-function getImageByEntityType(entity: Entity): string {
-  switch (entity.entity_type) {
-    case EntityType.Human: return humanImage;
-    case EntityType.Monster: return monsterImage;
-    case EntityType.Projectile: return projectileImage;
+function getImageByBehaviourType(entity: Entity): string {
+  switch (entity.model_type) {
+    case ModelType.Human: return humanImage;
+    case ModelType.Monster: return monsterImage;
+    case ModelType.Projectile: return projectileImage;
   }
 }
 
@@ -67,7 +67,7 @@ export function renderDiffs(diffs: Diff[], app: PIXI.Application) {
     }
     switch(diff.type) {
       case "UpsertEntity": {
-        const re = renderedEntities.get(diff.entity.id) || createRenderedEntity(diff.entity, app, getImageByEntityType(diff.entity));
+        const re = renderedEntities.get(diff.entity.id) || createRenderedEntity(diff.entity, app, getImageByBehaviourType(diff.entity));
         re.container.alpha = diff.entity.health.current / diff.entity.health.max;
         re.main.rotation = diff.entity.rotation;
         re.container.x = diff.entity.boundaries.top_left.x;

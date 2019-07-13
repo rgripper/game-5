@@ -1,12 +1,11 @@
-import { WorldState, Entity, EntityType } from "./world";
+import { WorldState, Entity, BehaviourType } from "./world";
 import { Diff } from "./sim";
 import { intersects } from "./geometry";
 
 export function affect_by_entity(world_state: WorldState, entity: Entity): Diff[] {
-    switch (entity.entity_type) {
-        case EntityType.Human: return affect_by_actor(world_state, entity);
-        case EntityType.Monster: return affect_by_actor(world_state, entity);
-        case EntityType.Projectile: return affect_by_projectile(world_state, entity);
+    switch (entity.behaviour_type) {
+        case BehaviourType.Actor: return affect_by_actor(world_state, entity);
+        case BehaviourType.Projectile: return affect_by_projectile(world_state, entity);
     }
 }
 
@@ -24,7 +23,7 @@ function affect_by_projectile(world_state: WorldState, projectile: Entity): Diff
     }
 
     let affected_non_projectiles = Object.values(world_state.entities).filter(other => 
-        other.entity_type !== EntityType.Projectile
+        other.behaviour_type !== BehaviourType.Projectile
             && intersects(other.boundaries, projectile.boundaries));
    
     return affected_non_projectiles
