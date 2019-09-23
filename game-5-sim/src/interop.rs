@@ -10,20 +10,20 @@ use hashbrown::HashMap;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 pub struct ActorMove {
     pub actor_id: ID, 
     pub direction: Radians,
 }
 
 #[wasm_bindgen]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Deserialize)]
 pub struct ActorId {
     pub actor_id: ID
 }
 
 #[wasm_bindgen]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Deserialize)]
 pub struct JS_SimCommand {
     pub actor_move: Option<ActorMove>,
     pub actor_move_stop: Option<ActorId>,
@@ -32,20 +32,16 @@ pub struct JS_SimCommand {
 }
 
 #[wasm_bindgen]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize)]
 pub struct JS_Diff {
     pub delete_entity_id: Option<ID>,
     pub upsert_entity: Option<ID>, // TODO: doesnt work, just to compile
 
+    pub delete_process_id: Option<ID>,
+    pub upsert_process: Option<ID>, // TODO: doesnt work, just to compile
+
     pub delete_player_id: Option<ID>,
     pub upsert_player: Option<ID>, // TODO: doesnt work, just to compile
-}
-
-#[wasm_bindgen]
-#[derive(Copy, Clone)]
-pub struct JS_WorldParams {
-    pub width: i32,
-    pub height: i32,
 }
 
 #[wasm_bindgen]
@@ -54,15 +50,15 @@ pub struct SimInterop {
 }
 
 impl SimInterop {
-    pub fn new(params: &JS_WorldParams) -> SimInterop {
+    pub fn new(width: &i32, height: &i32) -> SimInterop {
         SimInterop {
             world_state: WorldState {
                 new_id: 1,
                 boundaries: Rect {
                     top_left: Point { x: 0.0, y: 0.0 },
                     size: Size {
-                        width: params.width,
-                        height: params.height,
+                        width: *width,
+                        height: *height,
                     },
                 },
                 players: HashMap::new(),
@@ -98,11 +94,12 @@ impl SimInterop {
         diffs
             .iter()
             .flat_map(|diff| match diff {
-                Diff::DeleteEntity(id) => Some(JS_Diff { delete_entity_id: Some(*id), upsert_entity: None, delete_player_id: None, upsert_player: None }),
-                Diff::UpsertEntity(entity) => Some(JS_Diff { delete_entity_id: None, upsert_entity: Some(entity.id), delete_player_id: None, upsert_player: None }),
-                Diff::DeletePlayer(id) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_player_id: Some(*id), upsert_player: None }),
-                Diff::UpsertPlayer(player) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_player_id: None, upsert_player: Some(player.id) }),
-                _ => None,
+                Diff::DeleteEntity(id) => Some(JS_Diff { delete_entity_id: Some(*id), upsert_entity: None, delete_process_id: None, upsert_process: None, delete_player_id: None, upsert_player: None }),
+                Diff::UpsertEntity(entity) => Some(JS_Diff { delete_entity_id: None, upsert_entity: Some(entity.id), delete_process_id: None, upsert_process: None, delete_player_id: None, upsert_player: None }),
+                Diff::DeleteProcess(id) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: Some(*id), upsert_process: None, delete_player_id: None, upsert_player: None }),
+                Diff::UpsertProcess(process) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: None, upsert_process: Some(process.id), delete_player_id: None, upsert_player: None }),
+                Diff::DeletePlayer(id) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: None, upsert_process: None, delete_player_id: Some(*id), upsert_player: None }),
+                Diff::UpsertPlayer(player) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: None, upsert_process: None, delete_player_id: None, upsert_player: Some(player.id) }),
             })
             .collect()
     }

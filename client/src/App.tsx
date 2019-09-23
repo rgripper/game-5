@@ -24,11 +24,7 @@ function App () {
     if (gameViewRef.current === null) {
       return;
     }
-    // import("../../game-5-sim/pkg").then(({ create_sim }) => {
-    //   const sim = create_sim();
-    //   sim.free();
-    // });
-    
+
     const gameView = gameViewRef.current;
     const app = new PIXI.Application({backgroundColor : 0xFFAAFF, ...worldParams.size});
     gameView.appendChild(app.view);
@@ -47,7 +43,7 @@ function App () {
     pipelineClient.subscribeInput(commands$);
 
     return () => subscription.unsubscribe();
-  }, [1]);
+  }, []);
 
   return (
     <div className="App">

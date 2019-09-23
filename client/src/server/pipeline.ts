@@ -1,8 +1,6 @@
-import { bufferTime, scan, map, tap } from 'rxjs/operators';
+import { bufferTime, map } from 'rxjs/operators';
 import { Observable, Observer } from 'rxjs';
-import { SimInterop } from '../sim/interop';
 import { SimCommand, Diff } from '../sim/sim';
-
 export type WorldParams = {
     size: { width: number; height: number; };
 }
@@ -14,10 +12,12 @@ export type SimServerEventData =
 
 type SimServerEvent = { data: SimServerEventData }
 
-function streamCommandsToSim(worldParams: WorldParams, commands$: Observable<SimCommand>): Observable<Diff[]> {
-    const simInterop = new SimInterop(worldParams);
+async function streamCommandsToSim(worldParams: WorldParams, commands$: Observable<SimCommand>): Promise<Observable<Diff[]>> {
+    const { create_sim, update_sim } = await import("../../../game-5-sim/pkg/game_5_sim");
+
+    const simInterop = create_sim(worldParams.size.width, worldParams.size.height);// new SimInterop(worldParams);
     const batchCommands = bufferTime<SimCommand>(10);
-    const runTickPerCommandBatch = map((commands: SimCommand[]) => simInterop.update_world(commands));
+    const runTickPerCommandBatch = map((commands: SimCommand[]) => update_sim(simInterop, commands) as any);
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }
 
@@ -39,7 +39,7 @@ onmessage = (initEvent: SimServerEvent) => {
         console.log('Start');
         const commands$ = listenForCommands();
         const { worldParams } = initEvent.data; //{ size: { width: 640, height: 480 } };
-        streamCommandsToSim(worldParams, commands$).subscribe(diffs => postMessage(diffs, undefined as any));
+        streamCommandsToSim(worldParams, commands$).then(x => x.subscribe(diffs => postMessage(diffs, undefined as any)));
         return;
     }
 

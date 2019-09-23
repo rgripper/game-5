@@ -14,10 +14,6 @@ type PipelineClient = {
     output$: Observable<Update>;
 }
 
-export function configurePipeline() {
-    
-}
-
 export function createPipeline (params: UpdateStreamParams): PipelineClient {
     const simWorker = new Worker('serverPipeline.bundle.js');
     const postStart = (worldParams: WorldParams) => simWorker.postMessage({ type: 'Start', worldParams } as SimServerEventData, undefined as any);
