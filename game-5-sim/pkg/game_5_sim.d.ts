@@ -13,6 +13,9 @@ export function create_sim(width: number, height: number): SimInterop;
 export function update_sim(sim_interop: SimInterop, js_sim_commands: any): any;
 /**
 */
+export function set_panic(): void;
+/**
+*/
 export class ActorId {
   free(): void;
   actor_id: number;
@@ -49,14 +52,3 @@ export class JS_SimCommand {
 export class SimInterop {
   free(): void;
 }
-
-/**
-* If `module_or_path` is {RequestInfo}, makes a request and
-* for everything else, calls `WebAssembly.instantiate` directly.
-*
-* @param {RequestInfo | BufferSource | WebAssembly.Module} module_or_path
-*
-* @returns {Promise<any>}
-*/
-export default function init (module_or_path?: RequestInfo | BufferSource | WebAssembly.Module): Promise<any>;
-        

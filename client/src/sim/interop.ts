@@ -1,4 +1,4 @@
-import { WorldParams } from "../server/pipeline";
+import { WorldParams } from "../server/pipeline.worker";
 import { SimCommand, Diff, update_world } from "./sim";
 import { WorldState } from "./world";
 

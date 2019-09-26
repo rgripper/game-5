@@ -1,4 +1,4 @@
-import { bufferTime, map } from 'rxjs/operators';
+import { bufferTime, map, first } from 'rxjs/operators';
 import { Observable, Observer } from 'rxjs';
 import { SimCommand, Diff } from '../sim/sim';
 export type WorldParams = {
@@ -13,11 +13,15 @@ export type SimServerEventData =
 type SimServerEvent = { data: SimServerEventData }
 
 async function streamCommandsToSim(worldParams: WorldParams, commands$: Observable<SimCommand>): Promise<Observable<Diff[]>> {
-    const { create_sim, update_sim } = await import("../../../game-5-sim/pkg/game_5_sim");
-
+    const { create_sim, update_sim, set_panic } = await import("../../../game-5-sim/pkg/game_5_sim");
+    set_panic();
     const simInterop = create_sim(worldParams.size.width, worldParams.size.height);// new SimInterop(worldParams);
+    console.log('create_sim', simInterop);
     const batchCommands = bufferTime<SimCommand>(10);
-    const runTickPerCommandBatch = map((commands: SimCommand[]) => update_sim(simInterop, commands) as any);
+    const runTickPerCommandBatch = map((commands: SimCommand[]) => {
+        console.log('map', simInterop, commands)
+        return update_sim(simInterop, commands) as any
+    });
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }
 
@@ -50,5 +54,5 @@ onmessage = (initEvent: SimServerEvent) => {
     }
 };
 
-
+export default {} as typeof Worker & (new () => Worker);
 

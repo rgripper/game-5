@@ -1,5 +1,4 @@
-
-let wasm;
+import * as wasm from './game_5_sim_bg.wasm';
 
 /**
 * @param {number} width
@@ -54,14 +53,18 @@ function takeObject(idx) {
 */
 export function update_sim(sim_interop, js_sim_commands) {
     _assertClass(sim_interop, SimInterop);
-    const ptr0 = sim_interop.ptr;
-    sim_interop.ptr = 0;
     try {
-        const ret = wasm.update_sim(ptr0, addBorrowedObject(js_sim_commands));
+        const ret = wasm.update_sim(sim_interop.ptr, addBorrowedObject(js_sim_commands));
         return takeObject(ret);
     } finally {
         heap[stack_pointer++] = undefined;
     }
+}
+
+/**
+*/
+export function set_panic() {
+    wasm.set_panic();
 }
 
 function isLikeNone(x) {
@@ -439,69 +442,26 @@ export class SimInterop {
     }
 }
 
-function init(module) {
-    if (typeof module === 'undefined') {
-        console.log(import.meta.url)
-        module = import.meta.url.replace(/\.js$/, '_bg.wasm');
-    }
-    let result;
-    const imports = {};
-    imports.wbg = {};
-    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
-        const ret = JSON.parse(getStringFromWasm(arg0, arg1));
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_json_serialize = function(arg0, arg1) {
-        const ret = JSON.stringify(getObject(arg1));
-        const ret0 = passStringToWasm(ret);
-        const ret1 = WASM_VECTOR_LEN;
-        getInt32Memory()[arg0 / 4 + 0] = ret0;
-        getInt32Memory()[arg0 / 4 + 1] = ret1;
-    };
-    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
-        throw new Error(getStringFromWasm(arg0, arg1));
-    };
+export const __wbindgen_json_parse = function(arg0, arg1) {
+    const ret = JSON.parse(getStringFromWasm(arg0, arg1));
+    return addHeapObject(ret);
+};
 
-    if ((typeof URL === 'function' && module instanceof URL) || typeof module === 'string' || (typeof Request === 'function' && module instanceof Request)) {
+export const __wbindgen_json_serialize = function(arg0, arg1) {
+    const ret = JSON.stringify(getObject(arg1));
+    const ret0 = passStringToWasm(ret);
+    const ret1 = WASM_VECTOR_LEN;
+    getInt32Memory()[arg0 / 4 + 0] = ret0;
+    getInt32Memory()[arg0 / 4 + 1] = ret1;
+};
 
-        const response = fetch(module);
-        if (typeof WebAssembly.instantiateStreaming === 'function') {
-            result = WebAssembly.instantiateStreaming(response, imports)
-            .catch(e => {
-                return response
-                .then(r => {
-                    if (r.headers.get('Content-Type') != 'application/wasm') {
-                        console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
-                        return r.arrayBuffer();
-                    } else {
-                        throw e;
-                    }
-                })
-                .then(bytes => WebAssembly.instantiate(bytes, imports));
-            });
-        } else {
-            result = response
-            .then(r => r.arrayBuffer())
-            .then(bytes => WebAssembly.instantiate(bytes, imports));
-        }
-    } else {
+export const __wbg_error_569d7454c64f6dbe = function(arg0, arg1) {
+    const v0 = getStringFromWasm(arg0, arg1).slice();
+    wasm.__wbindgen_free(arg0, arg1 * 1);
+    console.error(v0);
+};
 
-        result = WebAssembly.instantiate(module, imports)
-        .then(result => {
-            if (result instanceof WebAssembly.Instance) {
-                return { instance: result, module };
-            } else {
-                return result;
-            }
-        });
-    }
-    return result.then(({instance, module}) => {
-        wasm = instance.exports;
-        init.__wbindgen_wasm_module = module;
-
-        return wasm;
-    });
-}
-
-export default init;
+export const __wbindgen_throw = function(arg0, arg1) {
+    throw new Error(getStringFromWasm(arg0, arg1));
+};
 

@@ -2,6 +2,7 @@
 export const memory: WebAssembly.Memory;
 export function create_sim(a: number, b: number): number;
 export function update_sim(a: number, b: number): number;
+export function set_panic(): void;
 export function __wbg_actormove_free(a: number): void;
 export function __wbg_get_actormove_actor_id(a: number): number;
 export function __wbg_set_actormove_actor_id(a: number, b: number): void;
@@ -35,4 +36,5 @@ export function __wbg_set_js_diff_upsert_player(a: number, b: number, c: number)
 export function __wbg_siminterop_free(a: number): void;
 export function __wbindgen_malloc(a: number): number;
 export function __wbindgen_realloc(a: number, b: number, c: number): number;
+export function __wbindgen_free(a: number, b: number): void;
 export function hash_test(a: number, b: number): number;

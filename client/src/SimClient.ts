@@ -1,7 +1,6 @@
 import { Observable, Observer, Subscription } from "rxjs";
-
 import { SimCommand, Diff } from "./sim/sim";
-import { SimServerEventData, WorldParams } from "./server/pipeline";
+import { SimServerEventData, WorldParams } from "./server/pipeline.worker";
 
 type UpdateStreamParams = {
     worldParams: WorldParams;
@@ -15,7 +14,7 @@ type PipelineClient = {
 }
 
 export function createPipeline (params: UpdateStreamParams): PipelineClient {
-    const simWorker = new Worker('serverPipeline.bundle.js');
+    const simWorker = new Worker('./worker.js');
     const postStart = (worldParams: WorldParams) => simWorker.postMessage({ type: 'Start', worldParams } as SimServerEventData, undefined as any);
     const postCommand = (command: SimCommand) => simWorker.postMessage({ type: 'SimCommand', command } as SimServerEventData, undefined as any);
     const postFinish = () => simWorker.postMessage({ type: 'Finish' } as SimServerEventData, undefined as any)
