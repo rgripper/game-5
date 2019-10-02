@@ -77,8 +77,8 @@ export type Activity = ActivityBase & (CharacterMove | CharacterShoot | Projecti
 export type CharacterControlCommand = {
   type: "CharacterControlCommand";
   activity: 
-    | ({ type: "CharacterMove"; entityId: Actor["id"]; } & ({ isOn: true; direction: Radians; } | { isOn: false; }))
-    | ({ type: "CharacterShoot"; entityId: Actor["id"]; } & ({ isOn: true; } | { isOn: false; }));
+    | ({ type: "CharacterMove"; entityId: Actor["id"]; } & ({ is_on: true; direction: Radians; } | { is_on: false; }))
+    | ({ type: "CharacterShoot"; entityId: Actor["id"]; } & ({ is_on: true; } | { is_on: false; }));
 }
 
 export type SimCommand = CreationCommand | CharacterControlCommand;
@@ -123,7 +123,7 @@ export function updateWorld (world: WorldState, simCommands: SimCommand[]): Diff
 
 function reduceActivitiesByCommand (activities: ObjectMap<Activity>, { activity }: CharacterControlCommand): Diff | undefined {
   let currentActivity = Object.values(activities).find(x => x.type === activity.type && x.entityId === activity.entityId);
-  if (activity.isOn) {
+  if (activity.is_on) {
     if (!currentActivity) {
       currentActivity = activity.type === "CharacterMove" 
         ? ({ id: getNewId(), ...activity } as (ActivityBase & CharacterMove)) 

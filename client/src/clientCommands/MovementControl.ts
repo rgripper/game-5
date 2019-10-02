@@ -123,15 +123,15 @@ function getDirection(movementTracker: MovementTracker): number {
 }
 
 function mapKeyboard(movementTracker: MovementTracker, actor_id: number): SimCommand {
-  const isOn = !!(movementTracker.vertical.active !== undefined || movementTracker.horizontal.active !== undefined);
+  const is_on = !!(movementTracker.vertical.active !== undefined || movementTracker.horizontal.active !== undefined);
 
-  return isOn 
+  return is_on 
     ? {
       type: "Actor",
       command: {
         type: "ActorMoveCommand",  
         actor_id,
-        isOn: true,
+        is_on: true,
         payload: {
           direction: getRadians(getDirection(movementTracker))
         }
@@ -142,7 +142,7 @@ function mapKeyboard(movementTracker: MovementTracker, actor_id: number): SimCom
       command: {
         type: "ActorMoveCommand",
         actor_id,
-        isOn: false
+        is_on: false
       }
     }
 }

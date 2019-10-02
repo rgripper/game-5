@@ -15,8 +15,9 @@ pub enum Diff {
     UpsertProcess(Process),
 }
 
-pub struct ActorMovePayload {
-    pub direction: Radians
+pub enum SimCommand {
+    Actor(ActorCommand),
+    Creation(CreationCommand)
 }
 
 pub enum ActorCommand {
@@ -24,15 +25,16 @@ pub enum ActorCommand {
     Shoot(ID, Option<()>),
 }
 
+pub struct ActorMovePayload {
+    pub direction: Radians
+}
+
 pub enum CreationCommand {
     AddEntity(Entity),
     AddPlayer(Player)
 }
 
-pub enum SimCommand {
-    Actor(ActorCommand),
-    Creation(CreationCommand)
-}
+
 
 static mut NEW_ID: ID = 0;
 

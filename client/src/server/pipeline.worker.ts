@@ -16,7 +16,15 @@ async function streamCommandsToSim(worldParams: WorldParams, commands$: Observab
     const { create_sim, update_sim, set_panic } = await import("../../../game-5-sim/pkg/game_5_sim");
     set_panic();
     const simInterop = create_sim(worldParams.size.width, worldParams.size.height);// new SimInterop(worldParams);
-    console.log('create_sim', simInterop);
+    /*
+        command:
+            actor_id: 1001  ​​​
+            is_on: true
+            payload:
+                direction: 0
+                type: "ActorMoveCommand"
+        type: "Actor"
+    */
     const batchCommands = bufferTime<SimCommand>(10);
     const runTickPerCommandBatch = map((commands: SimCommand[]) => {
         console.log('map', simInterop, commands)

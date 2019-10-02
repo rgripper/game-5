@@ -1,0 +1,47 @@
+syntax = "proto3";
+package sim_command;
+
+message SimCommand {
+  oneof type {
+    ActorMoveStart ActorMoveStart = 1;
+    ActorMoveStop ActorMoveStop = 2;
+    ActorShootStart ActorShootStart = 3;
+    ActorShootStop ActorShootStop = 4;
+    AddEntity AddEntity = 5;
+    AddPlayer AddPlayer = 6;
+  }
+}
+
+message ActorMoveStart {
+  int32 id = 1;
+  int32 direction = 2;
+}
+
+message ActorMoveStop {
+  int32 id = 1;
+}
+
+message ActorShootStart {
+  int32 id = 1;
+}
+
+message ActorShootStop {
+  int32 id = 1;
+}
+
+message AddEntity {
+  Entity entity = 1;
+}
+
+message AddPlayer {
+  Player player = 1;
+}
+
+message Entity {
+// TODO
+}
+
+
+message Player {
+// TODO
+}

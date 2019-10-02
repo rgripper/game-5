@@ -28,12 +28,12 @@ type ActorMovePayload = {
 type ActorMoveCommand = ({
     type: "ActorMoveCommand";
     actor_id: ID;
-} & ({ isOn: true; payload: ActorMovePayload } | { isOn: false }))
+} & ({ is_on: true; payload: ActorMovePayload } | { is_on: false }))
 
 type ActorShootCommand = {
     type: "ActorShootCommand";
     actor_id: ID;
-    isOn: boolean;
+    is_on: boolean;
 }
 
 export type ActorCommand = ActorMoveCommand | ActorShootCommand;
@@ -106,7 +106,7 @@ function produce_diff_from_command(
             let { actor_id } = command;
             switch(command.type) {
                 case "ActorMoveCommand": {
-                    if (command.isOn) {
+                    if (command.is_on) {
                         let payload = command.payload;
                         let maybe_found_process: Process | undefined = Object.values(world_state.processes)
                             .find(p => p.payload.type === "EntityMove" && p.entity_id === actor_id);
@@ -125,7 +125,7 @@ function produce_diff_from_command(
                     }
                 }
                 case "ActorShootCommand": {
-                    if (command.isOn) {
+                    if (command.is_on) {
                         let maybe_found_process: Process | undefined = Object.values(world_state.processes)
                             .find(p => p.payload.type === "EntityShoot" && p.entity_id === actor_id);
                         let new_payload: ProcessPayload = { type: "EntityShoot", cooldown: 5, current_cooldown: 0 };
