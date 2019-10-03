@@ -1,7 +1,7 @@
 import { Entity, Player, BehaviourType, ModelType } from "../sim/world";
 import { mapEventsToCommands } from "./mapEventsToCommands";
 import { SimCommand, gen_new_id } from "../sim/sim";
-import { from } from "rxjs";
+import { from, Observable } from "rxjs";
 import { Radians } from "../sim/geometry";
 
 export function getRadians(angle: number): Radians {
@@ -34,8 +34,8 @@ export default function() {
     return {
       controlCommands$: mapEventsToCommands({ target: document, movementKeys, entityId: humanActor.id }),
       initCommands$: from([
-        ...actors.map(entity => ({ type: "Creation", command: { type: "AddEntity", entity } } as SimCommand)),
-        ...players.map(player => ({ type: "Creation", command: { type: "AddPlayer", player } } as SimCommand))
+        ...actors.map((entity): SimCommand => ({ type: "AddEntity", entity })),
+        ...players.map((player): SimCommand => ({ type: "AddPlayer", player }))
       ])
     }
   }

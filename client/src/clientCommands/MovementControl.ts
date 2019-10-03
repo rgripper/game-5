@@ -127,22 +127,14 @@ function mapKeyboard(movementTracker: MovementTracker, actor_id: number): SimCom
 
   return is_on 
     ? {
-      type: "Actor",
-      command: {
-        type: "ActorMoveCommand",  
+        type: "ActorMoveStart",  
         actor_id,
-        is_on: true,
         payload: {
           direction: getRadians(getDirection(movementTracker))
         }
-      }
     }
     : {
-      type: "Actor",
-      command: {
-        type: "ActorMoveCommand",
-        actor_id,
-        is_on: false
-      }
+      type: "ActorMoveStop",
+      actor_id,
     }
 }

@@ -27,8 +27,9 @@ async function streamCommandsToSim(worldParams: WorldParams, commands$: Observab
     */
     const batchCommands = bufferTime<SimCommand>(10);
     const runTickPerCommandBatch = map((commands: SimCommand[]) => {
-        console.log('map', simInterop, commands)
-        return update_sim(simInterop, commands) as any
+        const interop_cmds = commands.map(({ type, ...interop_data }) => ({ [type]: interop_data }));
+        console.log(interop_cmds);
+        return update_sim(simInterop, interop_cmds) as any
     });
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }

@@ -16,8 +16,8 @@ export function mapEventsToCommands ({ target, movementKeys, entityId }: MapEven
   
   const shootingCommands$ = 
     merge(
-      keyDowns$.pipe(filter(e => e.key === " "), map(e => SimCommand.Actor({ type: "ActorShootCommand", actor_id: entityId, is_on: true }))),
-      keyUps$.pipe(filter(e => e.key === " "), map(e => SimCommand.Actor({ type: "ActorShootCommand", actor_id: entityId, is_on: false })))
+      keyDowns$.pipe(filter(e => e.key === " "), map((e): SimCommand => ({ type: "ActorShootStart", actor_id: entityId }))),
+      keyUps$.pipe(filter(e => e.key === " "), map((e): SimCommand => ({ type: "ActorShootStop", actor_id: entityId })))
     );
 
   // const mouseCommandsOn$ = fromEvent<MouseEvent>(document, 'mousedown').pipe(map(event => mapMouse(event, true, entityId)));
@@ -32,8 +32,8 @@ export function mapEventsToCommands ({ target, movementKeys, entityId }: MapEven
 function mapMouse (event: MouseEvent, is_on: boolean, actor_id: number): SimCommand | undefined {
   switch (event.button) {
     case 0: return is_on 
-      ? { type: "Actor", command: { type: "ActorShootCommand", actor_id, is_on } } 
-      : { type: "Actor", command: { type: "ActorShootCommand", actor_id, is_on } };
+      ? { type: "ActorShootStart", actor_id } 
+      : { type: "ActorShootStop", actor_id };
     default: return undefined;
   }
 }
