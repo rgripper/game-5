@@ -25,43 +25,42 @@ type ActorMovePayload = {
     direction: Radians;
 }
 
-type ActorMoveCommand = ({
-    type: "ActorMoveCommand";
+type ActorMoveStartCommand = {
+    type: "ActorMoveStart";
     actor_id: ID;
-} & ({ is_on: true; payload: ActorMovePayload } | { is_on: false }))
-
-type ActorShootCommand = {
-    type: "ActorShootCommand";
-    actor_id: ID;
-    is_on: boolean;
+    payload: ActorMovePayload;
 }
 
-export type ActorCommand = ActorMoveCommand | ActorShootCommand;
+type ActorMoveStopCommand = {
+    type: "ActorMoveStop";
+    actor_id: ID;
+}
 
-type CreationCommand = 
-| {
+type ActorShootStartCommand = {
+    type: "ActorShootStart";
+    actor_id: ID;
+}
+
+type ActorShootStopCommand = {
+    type: "ActorShootStop";
+    actor_id: ID;
+}
+
+type AddEntityCommand = {
     type: "AddEntity",
     entity: Entity
 }
-| {
+
+type AddPlayerCommand = {
     type: "AddPlayer",
     player: Player
 }
 
-export type SimCommand = 
-| {
-    type: "Actor",
-    command: ActorCommand
-}
-| {
-    type: "Creation",
-    command: CreationCommand
-}
 
-export const SimCommand = {
-    Actor: (command: ActorCommand): SimCommand => ({ type: "Actor", command }),
-    Creation: (command: CreationCommand): SimCommand => ({ type: "Creation", command }),
-}
+export type ActorCommand = ActorMoveStartCommand | ActorMoveStopCommand | ActorShootStartCommand | ActorShootStopCommand;
+export type CreationCommand = AddEntityCommand | AddPlayerCommand
+
+export type SimCommand = ActorCommand | CreationCommand
 
 let NEW_ID: ID = 0;
 
@@ -93,54 +92,41 @@ function produce_diff_from_command(
     gen_new_id: GenNewID
 ): Diff | undefined {
     switch (sim_command.type) {
-        case "Creation": {
-            let { command } = sim_command;
-            switch (command.type) {
-                case "AddEntity": return { type: "UpsertEntity", entity: command.entity };
-                case "AddPlayer": return { type: "UpsertPlayer", player: command.player };
-            }
-            throw new Error('Invalid command');
+        case "AddEntity": return { type: "UpsertEntity", entity: sim_command.entity };
+        case "AddPlayer": return { type: "UpsertPlayer", player: sim_command.player };
+        case "ActorMoveStart": {
+            let { payload, actor_id } = sim_command;
+            let maybe_found_process: Process | undefined = Object.values(world_state.processes)
+                .find(p => p.payload.type === "EntityMove" && p.entity_id === actor_id);
+            let new_payload: ProcessPayload = {
+                type: "EntityMove",
+                direction: payload.direction,
+                velocity: 2.0,
+            };
+            let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
+            return { type: "UpsertProcess", process };
         }
-        case "Actor": {
-            let { command } = sim_command;
-            let { actor_id } = command;
-            switch(command.type) {
-                case "ActorMoveCommand": {
-                    if (command.is_on) {
-                        let payload = command.payload;
-                        let maybe_found_process: Process | undefined = Object.values(world_state.processes)
-                            .find(p => p.payload.type === "EntityMove" && p.entity_id === actor_id);
-                        let new_payload: ProcessPayload = {
-                            type: "EntityMove",
-                            direction: payload.direction,
-                            velocity: 2.0,
-                        };
-                        let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
-                        return { type: "UpsertProcess", process }
-                    }
-                    else {
-                        return Object.values(world_state.processes)
-                            .filter(p => p.payload.type === "EntityMove" && p.entity_id === actor_id)
-                            .map(p => ({ type: "DeleteProcess", id: p.id } as Diff))[0]
-                    }
-                }
-                case "ActorShootCommand": {
-                    if (command.is_on) {
-                        let maybe_found_process: Process | undefined = Object.values(world_state.processes)
-                            .find(p => p.payload.type === "EntityShoot" && p.entity_id === actor_id);
-                        let new_payload: ProcessPayload = { type: "EntityShoot", cooldown: 5, current_cooldown: 0 };
-                        let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
-                        return { type: "UpsertProcess", process }
-                    }
-                    else {
-                        return Object.values(world_state.processes)
-                            .filter(p => p.payload.type === "EntityShoot" && p.entity_id === actor_id)
-                            .map(p => ({ type: "DeleteProcess", id: p.id } as Diff))[0]
-                    } 
-                }
-            }
-
+        case "ActorMoveStop": {
+            let { actor_id } = sim_command;
+            return Object.values(world_state.processes)
+                .filter(p => p.payload.type === "EntityMove" && p.entity_id === actor_id)
+                .map(p => ({ type: "DeleteProcess", id: p.id } as Diff))[0];
         }
+        case "ActorShootStart": {
+            let { actor_id } = sim_command;
+            let maybe_found_process: Process | undefined = Object.values(world_state.processes)
+                .find(p => p.payload.type === "EntityShoot" && p.entity_id === actor_id);
+            let new_payload: ProcessPayload = { type: "EntityShoot", cooldown: 5, current_cooldown: 0 };
+            let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
+            return { type: "UpsertProcess", process }
+        }
+        case "ActorShootStop": {
+            let { actor_id } = sim_command;
+            return Object.values(world_state.processes)
+                .filter(p => p.payload.type === "EntityShoot" && p.entity_id === actor_id)
+                .map(p => ({ type: "DeleteProcess", id: p.id } as Diff))[0]
+        }
+        default: throw new Error('Unknown sim_command type');
     }
 }
 

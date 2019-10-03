@@ -1,4 +1,4 @@
-use crate::sim::{ update_world, ActorCommand, ActorMovePayload, Diff, SimCommand };
+use crate::sim::{ update_world, ActorMovePayload, Diff, SimCommand };
 use crate::geometry::Size;
 use crate::geometry::Point;
 use crate::geometry::Rect;
@@ -25,9 +25,9 @@ pub struct ActorId {
 #[wasm_bindgen]
 #[derive(Copy, Clone, Deserialize)]
 pub struct JS_SimCommand {
-    pub actor_move: Option<ActorMove>,
+    pub actor_move_start: Option<ActorMove>,
     pub actor_move_stop: Option<ActorId>,
-    pub actor_shoot: Option<ActorId>,
+    pub actor_shoot_start: Option<ActorId>,
     pub actor_shoot_stop: Option<ActorId>,
 }
 
@@ -74,20 +74,17 @@ impl SimInterop {
     ) -> Vec<JS_Diff> {
         let sim_commands: Vec<_> = js_sim_commands
             .iter()
-            .map(|c| match &c.actor_move {
-                Some(actor_move) => ActorCommand::Move(actor_move.actor_id, Some(ActorMovePayload { direction: actor_move.direction })),
-                None => match &c.actor_move_stop {
-                    Some(actor_move_stop) => ActorCommand::Move(actor_move_stop.actor_id, None),
-                    None => match &c.actor_shoot {
-                        Some(actor_shoot) => ActorCommand::Shoot(actor_shoot.actor_id, None),
-                        None => match &c.actor_shoot_stop {
-                            Some(actor_shoot_stop) => ActorCommand::Shoot(actor_shoot_stop.actor_id, None),
-                            None => panic!("Missing command data")  
-                        }
-                    }
-                }
+            .map(|c| match &c.actor_move_start {
+                Some(actor_move) => SimCommand::ActorMoveStart(actor_move.actor_id, ActorMovePayload { direction: actor_move.direction }),
+                    None => match &c.actor_move_stop {
+                Some(actor_move_stop) => SimCommand::ActorMoveStop(actor_move_stop.actor_id),
+                    None => match &c.actor_shoot_start {
+                Some(actor_shoot) => SimCommand::ActorShootStart(actor_shoot.actor_id),
+                    None => match &c.actor_shoot_stop {
+                Some(actor_shoot_stop) => SimCommand::ActorShootStop(actor_shoot_stop.actor_id),
+                    None => panic!("Failed to map JS command to rust")  
+                }}}
             })
-            .map(SimCommand::Actor)
             .collect();
 
         let diffs: Vec<Diff> = update_world(&mut self.world_state, &sim_commands);
