@@ -1,6 +1,7 @@
-import { bufferTime, map, first } from 'rxjs/operators';
+import { bufferTime, map } from 'rxjs/operators';
 import { Observable, Observer } from 'rxjs';
 import { SimCommand, Diff } from '../sim/sim';
+import { SimInterop } from '../sim/interop';
 export type WorldParams = {
     size: { width: number; height: number; };
 }
@@ -12,24 +13,35 @@ export type SimServerEventData =
 
 type SimServerEvent = { data: SimServerEventData }
 
-async function streamCommandsToSim(worldParams: WorldParams, commands$: Observable<SimCommand>): Promise<Observable<Diff[]>> {
+async function streamCommandsToSimFromRust(worldParams: WorldParams, commands$: Observable<SimCommand>): Promise<Observable<Diff[]>> {
     const { create_sim, update_sim, set_panic } = await import("../../../game-5-sim/pkg/game_5_sim");
     set_panic();
     const simInterop = create_sim(worldParams.size.width, worldParams.size.height);// new SimInterop(worldParams);
-    /*
-        command:
-            actor_id: 1001  ​​​
-            is_on: true
-            payload:
-                direction: 0
-                type: "ActorMoveCommand"
-        type: "Actor"
-    */
     const batchCommands = bufferTime<SimCommand>(10);
     const runTickPerCommandBatch = map((commands: SimCommand[]) => {
         const interop_cmds = commands.map(({ type, ...interop_data }) => ({ [type]: interop_data }));
-        console.log(interop_cmds);
-        return update_sim(simInterop, interop_cmds) as any
+        //console.log(interop_cmds);
+        const js_diffs = update_sim(simInterop, interop_cmds) as any[];
+        const diffs = js_diffs.map((js_diff) => {
+            const entry = Object.entries(js_diff).find(([key, value]) => value !== null);
+            if (entry === undefined) {
+                throw new Error('Failed to convert diff');
+            }
+            const [type, data] = entry;
+            return { type, id: data } as any as Diff;
+        });
+
+        return diffs;
+    });
+    return commands$.pipe(batchCommands, runTickPerCommandBatch);
+}
+
+
+async function streamCommandsToSimFromTypeScript(worldParams: WorldParams, commands$: Observable<SimCommand>): Promise<Observable<Diff[]>> {
+    const simInterop = new SimInterop(worldParams);
+    const batchCommands = bufferTime<SimCommand>(10);
+    const runTickPerCommandBatch = map((commands: SimCommand[]) => {
+        return simInterop.update_sim(commands) as any[];
     });
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }
@@ -52,7 +64,12 @@ onmessage = (initEvent: SimServerEvent) => {
         console.log('Start');
         const commands$ = listenForCommands();
         const { worldParams } = initEvent.data; //{ size: { width: 640, height: 480 } };
-        streamCommandsToSim(worldParams, commands$).then(x => x.subscribe(diffs => postMessage(diffs, undefined as any)));
+        const streamCommandsToSim = true ? streamCommandsToSimFromRust : streamCommandsToSimFromTypeScript;
+        streamCommandsToSim(worldParams, commands$).then(x => x.subscribe(diffs => {
+            if(diffs.length > 0)
+                console.log(diffs);
+            postMessage(diffs, undefined as any)
+        }));
         return;
     }
 

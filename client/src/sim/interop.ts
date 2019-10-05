@@ -14,7 +14,7 @@ export class SimInterop {
         }
     }
 
-    update_world(sim_commands: SimCommand[]): Diff[] {
+    update_sim(sim_commands: SimCommand[]): Diff[] {
         return update_world(this.world_state, sim_commands);
     }
 }

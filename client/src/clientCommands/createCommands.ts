@@ -1,7 +1,7 @@
 import { Entity, Player, BehaviourType, ModelType } from "../sim/world";
 import { mapEventsToCommands } from "./mapEventsToCommands";
 import { SimCommand, gen_new_id } from "../sim/sim";
-import { from, Observable } from "rxjs";
+import { from } from "rxjs";
 import { Radians } from "../sim/geometry";
 
 export function getRadians(angle: number): Radians {

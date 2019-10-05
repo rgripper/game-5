@@ -41,14 +41,14 @@ pub struct JS_SimCommand {
 #[wasm_bindgen]
 #[derive(Copy, Clone, Serialize)]
 pub struct JS_Diff {
-    pub delete_entity_id: Option<ID>,
-    pub upsert_entity: Option<ID>, // TODO: doesnt work, just to compile
+    pub DeleteEntity: Option<ID>,
+    pub UpsertEntity: Option<ID>, // TODO: doesnt work, just to compile
 
-    pub delete_process_id: Option<ID>,
-    pub upsert_process: Option<ID>, // TODO: doesnt work, just to compile
+    pub DeleteProcess: Option<ID>,
+    pub UpsertProcess: Option<ID>, // TODO: doesnt work, just to compile
 
-    pub delete_player_id: Option<ID>,
-    pub upsert_player: Option<ID>, // TODO: doesnt work, just to compile
+    pub DeletePlayer: Option<ID>,
+    pub UpsertPlayer: Option<ID>, // TODO: doesnt work, just to compile
 }
 
 #[wasm_bindgen]
@@ -102,12 +102,12 @@ impl SimInterop {
         diffs
             .iter()
             .flat_map(|diff| match diff {
-                Diff::DeleteEntity(id) => Some(JS_Diff { delete_entity_id: Some(*id), upsert_entity: None, delete_process_id: None, upsert_process: None, delete_player_id: None, upsert_player: None }),
-                Diff::UpsertEntity(entity) => Some(JS_Diff { delete_entity_id: None, upsert_entity: Some(entity.id), delete_process_id: None, upsert_process: None, delete_player_id: None, upsert_player: None }),
-                Diff::DeleteProcess(id) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: Some(*id), upsert_process: None, delete_player_id: None, upsert_player: None }),
-                Diff::UpsertProcess(process) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: None, upsert_process: Some(process.id), delete_player_id: None, upsert_player: None }),
-                Diff::DeletePlayer(id) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: None, upsert_process: None, delete_player_id: Some(*id), upsert_player: None }),
-                Diff::UpsertPlayer(player) => Some(JS_Diff { delete_entity_id: None, upsert_entity: None, delete_process_id: None, upsert_process: None, delete_player_id: None, upsert_player: Some(player.id) }),
+                Diff::DeleteEntity(id) => Some(JS_Diff { DeleteEntity: Some(*id), UpsertEntity: None, DeleteProcess: None, UpsertProcess: None, DeletePlayer: None, UpsertPlayer: None }),
+                Diff::UpsertEntity(entity) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: Some(entity.id), DeleteProcess: None, UpsertProcess: None, DeletePlayer: None, UpsertPlayer: None }),
+                Diff::DeleteProcess(id) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: Some(*id), UpsertProcess: None, DeletePlayer: None, UpsertPlayer: None }),
+                Diff::UpsertProcess(process) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: None, UpsertProcess: Some(process.id), DeletePlayer: None, UpsertPlayer: None }),
+                Diff::DeletePlayer(id) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: None, UpsertProcess: None, DeletePlayer: Some(*id), UpsertPlayer: None }),
+                Diff::UpsertPlayer(player) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: None, UpsertProcess: None, DeletePlayer: None, UpsertPlayer: Some(player.id) }),
             })
             .collect()
     }
