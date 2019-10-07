@@ -39,19 +39,6 @@ pub struct JS_SimCommand {
 }
 
 #[wasm_bindgen]
-#[derive(Copy, Clone, Serialize)]
-pub struct JS_Diff {
-    pub DeleteEntity: Option<ID>,
-    pub UpsertEntity: Option<ID>, // TODO: doesnt work, just to compile
-
-    pub DeleteProcess: Option<ID>,
-    pub UpsertProcess: Option<ID>, // TODO: doesnt work, just to compile
-
-    pub DeletePlayer: Option<ID>,
-    pub UpsertPlayer: Option<ID>, // TODO: doesnt work, just to compile
-}
-
-#[wasm_bindgen]
 pub struct SimInterop {
     world_state: WorldState,
 }
@@ -78,7 +65,7 @@ impl SimInterop {
     pub fn update_world(
         &mut self,
         js_sim_commands: &Vec<JS_SimCommand>
-    ) -> Vec<JS_Diff> {
+    ) -> Vec<Diff> {
         let sim_commands: Vec<_> = js_sim_commands
             .iter()
             .map(|c| 
@@ -94,21 +81,12 @@ impl SimInterop {
                 match &c.ActorShootStop {
                 Some(actor_shoot_stop) => SimCommand::ActorShootStop(actor_shoot_stop.actor_id),
                     None => panic!("Failed to map JS command to rust")  
+                match &c.Add {
+                Some(actor_shoot_start) => SimCommand::ActorShootStart(actor_shoot_start.actor_id),
+                    None => 
                 }}}
             })
             .collect();
-
-        let diffs: Vec<Diff> = update_world(&mut self.world_state, &sim_commands);
-        diffs
-            .iter()
-            .flat_map(|diff| match diff {
-                Diff::DeleteEntity(id) => Some(JS_Diff { DeleteEntity: Some(*id), UpsertEntity: None, DeleteProcess: None, UpsertProcess: None, DeletePlayer: None, UpsertPlayer: None }),
-                Diff::UpsertEntity(entity) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: Some(entity.id), DeleteProcess: None, UpsertProcess: None, DeletePlayer: None, UpsertPlayer: None }),
-                Diff::DeleteProcess(id) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: Some(*id), UpsertProcess: None, DeletePlayer: None, UpsertPlayer: None }),
-                Diff::UpsertProcess(process) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: None, UpsertProcess: Some(process.id), DeletePlayer: None, UpsertPlayer: None }),
-                Diff::DeletePlayer(id) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: None, UpsertProcess: None, DeletePlayer: Some(*id), UpsertPlayer: None }),
-                Diff::UpsertPlayer(player) => Some(JS_Diff { DeleteEntity: None, UpsertEntity: None, DeleteProcess: None, UpsertProcess: None, DeletePlayer: None, UpsertPlayer: Some(player.id) }),
-            })
-            .collect()
+        update_world(&mut self.world_state, &sim_commands)
     }
 }

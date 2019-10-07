@@ -19,7 +19,7 @@ fn affect_by_actor(world_state: &WorldState, actor: &Entity) -> Vec<Diff> {
 
 fn affect_by_projectile(world_state: &WorldState, projectile: &Entity) -> Vec<Diff> {
     if !intersects(&projectile.boundaries, &world_state.boundaries) {
-        return vec![Diff::DeleteEntity(projectile.id)]
+        return vec![Diff::DeleteEntity { id: projectile.id }]
     }
 
     let affected_non_projectiles = world_state.entities.values().filter(|other| {
@@ -35,7 +35,7 @@ fn affect_by_projectile(world_state: &WorldState, projectile: &Entity) -> Vec<Di
 
 fn affect_non_projectile_by_projectile(projectile: &Entity, other_entity: &Entity) -> Vec<Diff> {
     vec![
-        Diff::DeleteEntity(projectile.id),
+        Diff::DeleteEntity { id: projectile.id },
         apply_damage(other_entity)
     ]
 }
@@ -43,12 +43,14 @@ fn affect_non_projectile_by_projectile(projectile: &Entity, other_entity: &Entit
 fn apply_damage(entity: &Entity) -> Diff {
     let next_health = entity.health.current - 2;
     if next_health <= 0 {
-        Diff::DeleteEntity(entity.id)
+        Diff::DeleteEntity { id: entity.id }
     }
     else {
-        Diff::UpsertEntity(Entity { 
-            health: Health { current: next_health, ..entity.health }, 
-            ..*entity 
-        })
+        Diff::UpsertEntity { 
+            entity: Entity { 
+                health: Health { current: next_health, ..entity.health }, 
+                ..*entity
+            }
+        }
     }
 }

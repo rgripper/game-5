@@ -19,7 +19,7 @@ pub fn copy_update_entity_by_process_payload(entity: &Entity, process: &Process,
                     ..*process
                 };
                 return vec![
-                    Diff::UpsertProcess(updated_process),
+                    Diff::UpsertProcess { process: updated_process },
                     shot_diffs.0,
                     shot_diffs.1
                 ];
@@ -30,7 +30,7 @@ pub fn copy_update_entity_by_process_payload(entity: &Entity, process: &Process,
                     ..*process
                 };
                 vec![
-                    Diff::UpsertProcess(updated_process)
+                    Diff::UpsertProcess { process: updated_process }
                 ]
             }
             
@@ -46,7 +46,7 @@ fn move_entity (entity: &Entity, velocity: &Velocity, direction: &Radians) -> Di
         },
         ..*entity // TODO: do a real fix
     };
-    Diff::UpsertEntity(updated_entity)
+    Diff::UpsertEntity { entity: updated_entity }
 }
 
 fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (Diff, Diff) {
@@ -84,7 +84,7 @@ fn shoot_from (owner: &Entity, new_projectile_id: ID, new_activity_id: ID) -> (D
     };
 
     return (
-        Diff::UpsertEntity(projectile), 
-        Diff::UpsertProcess(projectile_activity)
+        Diff::UpsertEntity { entity: projectile }, 
+        Diff::UpsertProcess { process: projectile_activity }
     );
 }

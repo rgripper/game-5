@@ -1,16 +1,16 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Point {
     pub x: f32, // from left to right
     pub y: f32, // from top to bottom
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Size { 
     pub width: i32, 
     pub height: i32, 
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Rect {
     pub top_left: Point,
     pub size: Size,

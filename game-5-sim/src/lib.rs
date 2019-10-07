@@ -9,7 +9,6 @@ mod interop;
 mod affects;
 
 use crate::utils::set_panic_hook;
-use crate::interop::JS_Diff;
 use crate::interop::JS_SimCommand;
 use crate::interop::{ SimInterop };
 use wasm_bindgen::prelude::*;

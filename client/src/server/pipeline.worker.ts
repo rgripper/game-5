@@ -23,12 +23,14 @@ async function streamCommandsToSimFromRust(worldParams: WorldParams, commands$: 
         //console.log(interop_cmds);
         const js_diffs = update_sim(simInterop, interop_cmds) as any[];
         const diffs = js_diffs.map((js_diff) => {
-            const entry = Object.entries(js_diff).find(([key, value]) => value !== null);
-            if (entry === undefined) {
-                throw new Error('Failed to convert diff');
-            }
-            const [type, data] = entry;
-            return { type, id: data } as any as Diff;
+            console.log(js_diff);
+            return js_diff;
+            // const entry = Object.entries(js_diff).find(([key, value]) => value !== null);
+            // if (entry === undefined) {
+            //     throw new Error('Failed to convert diff');
+            // }
+            // const [type, data] = entry;
+            // return { type, id: data } as any as Diff;
         });
 
         return diffs;
@@ -64,7 +66,7 @@ onmessage = (initEvent: SimServerEvent) => {
         console.log('Start');
         const commands$ = listenForCommands();
         const { worldParams } = initEvent.data; //{ size: { width: 640, height: 480 } };
-        const streamCommandsToSim = true ? streamCommandsToSimFromRust : streamCommandsToSimFromTypeScript;
+        const streamCommandsToSim = false ? streamCommandsToSimFromRust : streamCommandsToSimFromTypeScript;
         streamCommandsToSim(worldParams, commands$).then(x => x.subscribe(diffs => {
             if(diffs.length > 0)
                 console.log(diffs);

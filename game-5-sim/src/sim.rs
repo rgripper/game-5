@@ -3,16 +3,17 @@ use crate::behaviours::copy_update_entity_by_process_payload;
 use crate::geometry::{ Radians };
 use crate::world::{Entity, GenNewID, Process, ProcessPayload, Player, WorldState, ID };
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum Diff {
-    DeleteEntity(ID),
-    UpsertEntity(Entity),
+    DeleteEntity { id: ID },
+    UpsertEntity { entity: Entity },
 
-    DeletePlayer(ID),
-    UpsertPlayer(Player),
+    DeletePlayer { id: ID },
+    UpsertPlayer { player: Player },
 
-    DeleteProcess(ID),
-    UpsertProcess(Process),
+    DeleteProcess { id: ID },
+    UpsertProcess { process: Process },
 }
 
 pub enum SimCommand {
@@ -104,13 +105,13 @@ fn produce_diff_from_command(
                 velocity: 2.0,
             };
             let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
-            Some(Diff::UpsertProcess(process))
+            Some(Diff::UpsertProcess { process })
         },
         SimCommand::ActorMoveStop(actor_id) => world_state
             .processes
             .values()
             .find(|p| p.payload.is_entity_move() && p.entity_id == *actor_id)
-            .map(|p| Diff::DeleteProcess(p.id)),
+            .map(|p| Diff::DeleteProcess { id: p.id }),
         SimCommand::ActorShootStart(actor_id) => {
             let maybe_found_process: Option<&Process> = world_state
                 .processes
@@ -118,15 +119,15 @@ fn produce_diff_from_command(
                 .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id);
             let new_payload = ProcessPayload::EntityShoot { cooldown: 5, current_cooldown: 0 };
             let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
-            Some(Diff::UpsertProcess(process))
+            Some(Diff::UpsertProcess { process })
         },
         SimCommand::ActorShootStop(actor_id) => world_state
             .processes
             .values()
             .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id)
-            .map(|p| Diff::DeleteProcess(p.id)),
-        SimCommand::AddEntity (entity) => Some(Diff::UpsertEntity(*entity)),
-        SimCommand::AddPlayer (player) => Some(Diff::UpsertPlayer(*player))
+            .map(|p| Diff::DeleteProcess { id: p.id }),
+        SimCommand::AddEntity (entity) => Some(Diff::UpsertEntity { entity: *entity }),
+        SimCommand::AddPlayer (player) => Some(Diff::UpsertPlayer { player: *player })
     }
 }
 
@@ -147,16 +148,16 @@ fn create_or_derive_process_payload (maybe_process: Option<&Process>, entity_id:
 
 fn apply_diff_to_world(world_state: &mut WorldState, diff: &Diff) {
     match diff {
-        Diff::UpsertEntity(entity) => {
+        Diff::UpsertEntity { entity } => {
             world_state.entities.insert(entity.id, *entity);
         }
-        Diff::UpsertProcess(process) => {
+        Diff::UpsertProcess { process } => {
             world_state.processes.insert(process.id, *process);
         }
-        Diff::UpsertPlayer(player) => {
+        Diff::UpsertPlayer { player } => {
             world_state.players.insert(player.id, *player);
         }
-        Diff::DeleteEntity(entity_id) => {
+        Diff::DeleteEntity { id: entity_id } => {
             world_state.entities.remove(entity_id);
             let process_ids: Vec<ID> = world_state
                 .processes
@@ -168,10 +169,10 @@ fn apply_diff_to_world(world_state: &mut WorldState, diff: &Diff) {
                 world_state.processes.remove(&id);
             }
         }
-        Diff::DeleteProcess(id) => {
+        Diff::DeleteProcess { id } => {
             world_state.processes.remove(id);
         }
-        Diff::DeletePlayer(id) => {
+        Diff::DeletePlayer { id } => {
             world_state.players.remove(id);
         }
     }
