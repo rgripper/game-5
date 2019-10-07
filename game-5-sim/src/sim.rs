@@ -16,16 +16,20 @@ pub enum Diff {
     UpsertProcess { process: Process },
 }
 
-pub enum SimCommand {
-    ActorMoveStart(ID, ActorMovePayload),
-    ActorMoveStop(ID),
-    ActorShootStart(ID),
-    ActorShootStop(ID),
 
-    AddEntity(Entity),
-    AddPlayer(Player)
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum SimCommand {
+    ActorMoveStart { actor_id: ID, payload: ActorMovePayload },
+    ActorMoveStop { actor_id: ID },
+    ActorShootStart { actor_id: ID },
+    ActorShootStop { actor_id: ID },
+
+    AddEntity { entity: Entity },
+    AddPlayer { player: Player }
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct ActorMovePayload {
     pub direction: Radians
 }
@@ -95,7 +99,7 @@ fn produce_diff_from_command(
     gen_new_id: &GenNewID,
 ) -> Option<Diff> {
     match sim_command {
-        SimCommand::ActorMoveStart(actor_id, payload) => {
+        SimCommand::ActorMoveStart { actor_id, payload } => {
             let maybe_found_process: Option<&Process> = world_state
                 .processes
                 .values()
@@ -107,12 +111,12 @@ fn produce_diff_from_command(
             let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
             Some(Diff::UpsertProcess { process })
         },
-        SimCommand::ActorMoveStop(actor_id) => world_state
+        SimCommand::ActorMoveStop { actor_id } => world_state
             .processes
             .values()
             .find(|p| p.payload.is_entity_move() && p.entity_id == *actor_id)
             .map(|p| Diff::DeleteProcess { id: p.id }),
-        SimCommand::ActorShootStart(actor_id) => {
+        SimCommand::ActorShootStart { actor_id } => {
             let maybe_found_process: Option<&Process> = world_state
                 .processes
                 .values()
@@ -121,13 +125,13 @@ fn produce_diff_from_command(
             let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
             Some(Diff::UpsertProcess { process })
         },
-        SimCommand::ActorShootStop(actor_id) => world_state
+        SimCommand::ActorShootStop { actor_id } => world_state
             .processes
             .values()
             .find(|p| p.payload.is_entity_shoot() && p.entity_id == *actor_id)
             .map(|p| Diff::DeleteProcess { id: p.id }),
-        SimCommand::AddEntity (entity) => Some(Diff::UpsertEntity { entity: *entity }),
-        SimCommand::AddPlayer (player) => Some(Diff::UpsertPlayer { player: *player })
+        SimCommand::AddEntity { entity } => Some(Diff::UpsertEntity { entity: *entity }),
+        SimCommand::AddPlayer { player } => Some(Diff::UpsertPlayer { player: *player })
     }
 }
 

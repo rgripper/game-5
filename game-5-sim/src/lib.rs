@@ -8,8 +8,8 @@ mod behaviours;
 mod interop;
 mod affects;
 
+use crate::sim::SimCommand;
 use crate::utils::set_panic_hook;
-use crate::interop::JS_SimCommand;
 use crate::interop::{ SimInterop };
 use wasm_bindgen::prelude::*;
 use web_sys::console;
@@ -35,12 +35,12 @@ pub fn create_sim(width: i32, height: i32) -> SimInterop {
 
 #[wasm_bindgen]
 pub fn update_sim(sim_interop: &mut SimInterop, js_sim_commands: &JsValue) -> JsValue {
-    let sim_commands: Vec<JS_SimCommand> = js_sim_commands.into_serde().unwrap();
-    let diffs = sim_interop.update_world(&sim_commands);
-    
-    if diffs.len() > 0 {
-        console::log_2(&"Logging arbitrary values looks like".into(), &diffs.len().to_string().into());
+    let sim_commands: Vec<SimCommand> = js_sim_commands.into_serde().unwrap();
+    if sim_commands.len() > 0 {
+        console::log_2(&"Logging commands".into(), &sim_commands.len().to_string().into());
     }
+    
+    let diffs = sim_interop.update_world(&sim_commands);
     
     JsValue::from_serde(&diffs).unwrap()
 }

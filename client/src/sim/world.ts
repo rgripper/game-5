@@ -11,14 +11,14 @@ export type Health = {
 }
 
 export enum BehaviourType {
-    Actor,
-    Projectile,
+    Actor = "Actor",
+    Projectile = "Projectile",
 }
 
 export enum ModelType {
-    Human,
-    Monster,
-    Projectile,
+    Human = "Human",
+    Monster = "Monster",
+    Projectile = "Projectile",
 }
 
 
