@@ -1,5 +1,5 @@
 import { bufferTime, map, tap } from 'rxjs/operators';
-import { Observable, Observer, ReplaySubject } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 import { SimCommand, Diff } from '../sim/sim';
 import { SimInterop } from '../sim/interop';
 export type WorldParams = {
@@ -19,8 +19,6 @@ async function streamCommandsToSimFromRust(worldParams: WorldParams, commands$: 
     const simInterop = create_sim(worldParams.size.width, worldParams.size.height);// new SimInterop(worldParams);
     const batchCommands = bufferTime<SimCommand>(10);
     const runTickPerCommandBatch = map((commands: SimCommand[]) => {
-        if(commands.length)
-            console.log(commands);
         return update_sim(simInterop, commands) as any[];
     });
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
@@ -31,9 +29,7 @@ async function streamCommandsToSimFromTypeScript(worldParams: WorldParams, comma
     const simInterop = new SimInterop(worldParams);
     const batchCommands = bufferTime<SimCommand>(10);
     const runTickPerCommandBatch = map((commands: SimCommand[]) => {
-        if(commands.length)
-            console.log(commands);
-        return simInterop.update_sim(commands) as any[];
+        return simInterop.update_sim(commands);
     });
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }
@@ -58,7 +54,7 @@ onmessage = (initEvent: SimServerEvent) => {
         const { worldParams } = initEvent.data; //{ size: { width: 640, height: 480 } };
         const streamCommandsToSim = true ? streamCommandsToSimFromRust : streamCommandsToSimFromTypeScript;
         streamCommandsToSim(worldParams, commands$).then(x => x.subscribe(diffs => {
-            if(diffs.length > 0)
+            if (diffs.length > 0)
                 console.log(diffs);
             postMessage(diffs, undefined as any)
         }));

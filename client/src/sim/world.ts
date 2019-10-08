@@ -55,9 +55,9 @@ export type ProcessPayload =
     }
 
 export type WorldState = {
-    boundaries: Rect,
-    players: { [id: number]: Player },
-    entities: { [id: number]: Entity },
-    processes: { [id: number]: Process },
+    boundaries: Rect;
+    players: Map<ID, Player>;
+    entities: Map<ID, Entity>;
+    processes: Map<ID, Process>;
 }
 

@@ -72,7 +72,10 @@ export function gen_new_id (): ID {
 
 export function update_world (world_state: WorldState, sim_commands: SimCommand[]): Diff[] {
     const process_result_diffs = Object.values(world_state.processes).map(process => {
-        const entity = world_state.entities[process.entity_id];
+        const entity = world_state.entities.get(process.entity_id);
+        if (entity === undefined) {
+            throw new Error(`Could not find entity by id '${process.entity_id}'`);
+        }
         const entity_update_diffs = copy_update_entity_by_process_payload(entity, process, gen_new_id);
         entity_update_diffs.map(diff => apply_diff_to_world(world_state, diff));
         const entity_affect_diffs = affect_by_entity(world_state, entity);
@@ -149,28 +152,28 @@ function create_or_derive_process_payload (maybe_process: Process | undefined, e
 function apply_diff_to_world (world: WorldState, diff: Diff): void {
     switch (diff.type) {
         case "UpsertEntity": {
-            world.entities[diff.entity.id] = diff.entity;
+            world.entities.set(diff.entity.id, diff.entity);
             break;
         }
         case "UpsertPlayer": {
-            world.players[diff.player.id] = diff.player;
+            world.players.set(diff.player.id, diff.player);
             break;
         }
         case "UpsertProcess": {
-            world.processes[diff.process.id] = diff.process;
+            world.processes.set(diff.process.id, diff.process);
             break;
         }
         case "DeleteEntity": {
-            delete world.entities[diff.id];
-            Object.values(world.processes).filter(x => x.entity_id === diff.id).forEach(x => delete world.processes[x.id]);
+            world.entities.delete(diff.id);
+            Object.values(world.processes).filter(x => x.entity_id === diff.id).forEach(x => world.processes.delete(x.id));
             break;
         }
         case "DeleteProcess": {
-            delete world.processes[diff.id];
+            world.processes.delete(diff.id);
             break;
         }
         case "DeletePlayer": {
-            delete world.players[diff.id];
+            world.players.delete(diff.id);
             break;
         }
     }

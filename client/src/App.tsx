@@ -4,17 +4,18 @@ import { createRenderingPipe } from './rendering/rendering';
 import { concat } from 'rxjs';
 import DebugView, { createDebuggingPipe } from './DebugView';
 import { createPipeline } from './SimClient';
-import { WorldState } from './sim/world';
+import { WorldState, Player, ID, Process, Entity } from './sim/world';
 import createCommands from './clientCommands/createCommands';
 
 function App () {
   const worldParams = { size: { width: 500, height: 500 } };
 
+  // TODO: refactor duplicate init world
   const initialWorld: WorldState = {
     boundaries: { top_left: { x: 0, y: 0 }, size: worldParams.size },
-    players: {},
-    processes: {}, 
-    entities: {}, 
+    players: new Map<ID, Player>(),
+    processes: new Map<ID, Process>(), 
+    entities: new Map<ID, Entity>(), 
   };
 
   const [debuggedWorld, setDebuggedWorld] = useState<WorldState>(initialWorld);

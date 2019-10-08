@@ -4,28 +4,28 @@ import { Diff } from "../sim/sim";
 export function apply_diff_to_world (world: WorldState, diff: Diff): void {
   switch (diff.type) {
       case "UpsertEntity": {
-          world.entities[diff.entity.id] = diff.entity;
+          world.entities.set(diff.entity.id, diff.entity);
           break;
       }
       case "UpsertPlayer": {
-          world.players[diff.player.id] = diff.player;
+          world.players.set(diff.player.id, diff.player);
           break;
       }
       case "UpsertProcess": {
-          world.processes[diff.process.id] = diff.process;
+          world.processes.set(diff.process.id, diff.process);
           break;
       }
       case "DeleteEntity": {
-          delete world.entities[diff.id];
-          Object.values(world.processes).filter(x => x.entity_id === diff.id).forEach(x => delete world.processes[x.id]);
+          world.entities.delete(diff.id);
+          Object.values(world.processes).filter(x => x.entity_id === diff.id).forEach(x => world.processes.delete(x.id));
           break;
       }
       case "DeleteProcess": {
-          delete world.processes[diff.id];
+          world.processes.delete(diff.id);
           break;
       }
       case "DeletePlayer": {
-          delete world.players[diff.id];
+          world.players.delete(diff.id);
           break;
       }
   }
