@@ -5,14 +5,11 @@ mod geometry;
 mod physics;
 mod sim;
 mod behaviours;
-mod interop;
 mod affects;
+mod interop;
 
-use crate::sim::SimCommand;
 use crate::utils::set_panic_hook;
-use crate::interop::{ SimInterop };
 use wasm_bindgen::prelude::*;
-use web_sys::console;
 
 #[macro_use]
 extern crate serde_derive;
@@ -28,22 +25,6 @@ extern {
     fn alert(s: &str);
 }
 
-#[wasm_bindgen]
-pub fn create_sim(width: i32, height: i32) -> SimInterop {
-    SimInterop::new(&width, &height)
-}
-
-#[wasm_bindgen]
-pub fn update_sim(sim_interop: &mut SimInterop, js_sim_commands: &JsValue) -> JsValue {
-    let sim_commands: Vec<SimCommand> = js_sim_commands.into_serde().unwrap();
-    if sim_commands.len() > 0 {
-        console::log_2(&"Logging commands".into(), &sim_commands.len().to_string().into());
-    }
-    
-    let diffs = sim_interop.update_world(&sim_commands);
-    
-    JsValue::from_serde(&diffs).unwrap()
-}
 
 #[wasm_bindgen]
 pub fn set_panic() {

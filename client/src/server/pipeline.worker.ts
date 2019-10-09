@@ -1,7 +1,7 @@
 import { bufferTime, map, tap } from 'rxjs/operators';
 import { Observable, ReplaySubject } from 'rxjs';
 import { SimCommand, Diff } from '../sim/sim';
-import { SimInterop } from '../sim/interop';
+import { JavaScriptSimInterop } from '../sim/interop';
 export type WorldParams = {
     size: { width: number; height: number; };
 }
@@ -14,22 +14,25 @@ export type SimServerEventData =
 type SimServerEvent = { data: SimServerEventData }
 
 async function streamCommandsToSimFromRust(worldParams: WorldParams, commands$: Observable<SimCommand>): Promise<Observable<Diff[]>> {
-    const { create_sim, update_sim, set_panic } = await import("../../../game-5-sim/pkg/game_5_sim");
-    set_panic();
-    const simInterop = create_sim(worldParams.size.width, worldParams.size.height);// new SimInterop(worldParams);
+    const { SimInterop: tmp, set_panic } = await import("../../../game-5-sim/pkg/game_5_sim");
+    console.log(worldParams)
+    const simInterop = tmp.create(worldParams);// new SimInterop(worldParams);
     const batchCommands = bufferTime<SimCommand>(10);
     const runTickPerCommandBatch = map((commands: SimCommand[]) => {
-        return update_sim(simInterop, commands) as any[];
+        console.log('cmds', commands)
+        return simInterop.update(commands) as any[];
     });
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }
 
 
 async function streamCommandsToSimFromTypeScript(worldParams: WorldParams, commands$: Observable<SimCommand>): Promise<Observable<Diff[]>> {
-    const simInterop = new SimInterop(worldParams);
+    const simInterop = JavaScriptSimInterop.create(worldParams);
     const batchCommands = bufferTime<SimCommand>(10);
     const runTickPerCommandBatch = map((commands: SimCommand[]) => {
-        return simInterop.update_sim(commands);
+        if(commands.length > 0)
+        console.log('cmds', commands)
+        return simInterop.update(commands);
     });
     return commands$.pipe(batchCommands, runTickPerCommandBatch);
 }
@@ -52,10 +55,10 @@ onmessage = (initEvent: SimServerEvent) => {
         console.log('Start');
         const commands$ = listenForCommands().pipe(tap(x => console.log('cmd:', x)));
         const { worldParams } = initEvent.data; //{ size: { width: 640, height: 480 } };
-        const streamCommandsToSim = true ? streamCommandsToSimFromRust : streamCommandsToSimFromTypeScript;
+        const streamCommandsToSim = false ? streamCommandsToSimFromRust : streamCommandsToSimFromTypeScript;
         streamCommandsToSim(worldParams, commands$).then(x => x.subscribe(diffs => {
             if (diffs.length > 0)
-                console.log(diffs);
+                console.log('diffs', diffs);
             postMessage(diffs, undefined as any)
         }));
         return;

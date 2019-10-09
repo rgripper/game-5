@@ -1,11 +1,11 @@
-import { WorldParams } from "../server/pipeline.worker";
 import { SimCommand, Diff, update_world } from "./sim";
 import { WorldState, ID, Player, Entity, Process } from "./world";
+import { WorldParams } from "../server/sim";
 
-export class SimInterop {
+export class JavaScriptSimInterop {
     private world_state: WorldState;
 
-    constructor({ size }: WorldParams) {
+    private constructor({ size }: WorldParams) {
         this.world_state = {
             boundaries: { top_left: { x: 0, y: 0 }, size },
             players: new Map<ID, Player>(),
@@ -14,7 +14,11 @@ export class SimInterop {
         }
     }
 
-    update_sim(sim_commands: SimCommand[]): Diff[] {
+    static create(world_params: WorldParams) {
+        return new JavaScriptSimInterop(world_params);
+    }
+
+    update(sim_commands: SimCommand[]): Diff[] {
         return update_world(this.world_state, sim_commands);
     }
 }

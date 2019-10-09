@@ -1,6 +1,6 @@
 import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Point, intersects } from "./sim/geometry";
-import { Entity, WorldState, BehaviourType } from "./sim/world";
+import { Entity, WorldState, BehaviourType, Player, Process, ID } from "./sim/world";
 import { fromEvent } from "rxjs";
 import { tap } from "rxjs/operators";
 import { Diff } from "./sim/sim";
@@ -38,9 +38,9 @@ export default function({ worldState, children }: PropsWithChildren<{ worldState
 
 export function createDebuggingPipe(initialWorld: WorldState, onChange: (world: WorldState) => void) {
   const clientWorld: WorldState = {
-    processes: { ...initialWorld.processes },
-    entities: { ...initialWorld.entities },
-    players: { ...initialWorld.players },
+    players: new Map<ID, Player>(),
+    processes: new Map<ID, Process>(), 
+    entities: new Map<ID, Entity>(), 
     boundaries: { ...initialWorld.boundaries }
   };
   return tap<Diff[]>(diffs => {

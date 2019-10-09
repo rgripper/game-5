@@ -21,7 +21,6 @@ export enum ModelType {
     Projectile = "Projectile",
 }
 
-
 export type Entity = {
     id: ID;
     health: Health;
