@@ -71,7 +71,7 @@ export function gen_new_id (): ID {
 }
 
 export function update_world (world_state: WorldState, sim_commands: SimCommand[]): Diff[] {
-    const process_result_diffs = Object.values(world_state.processes).map(process => {
+    const process_result_diffs = Array.from(world_state.processes.values()).map(process => {
         const entity = world_state.entities.get(process.entity_id);
         if (entity === undefined) {
             throw new Error(`Could not find entity by id '${process.entity_id}'`);
@@ -99,7 +99,7 @@ function produce_diff_from_command(
         case "AddPlayer": return { type: "UpsertPlayer", player: sim_command.player };
         case "ActorMoveStart": {
             let { payload, actor_id } = sim_command;
-            let maybe_found_process: Process | undefined = Object.values(world_state.processes)
+            let maybe_found_process: Process | undefined = Array.from(world_state.processes.values())
                 .find(p => p.payload.type === "EntityMove" && p.entity_id === actor_id);
             let new_payload: ProcessPayload = {
                 type: "EntityMove",
@@ -111,13 +111,13 @@ function produce_diff_from_command(
         }
         case "ActorMoveStop": {
             let { actor_id } = sim_command;
-            return Object.values(world_state.processes)
+            return Array.from(world_state.processes.values())
                 .filter(p => p.payload.type === "EntityMove" && p.entity_id === actor_id)
                 .map(p => ({ type: "DeleteProcess", id: p.id } as Diff))[0];
         }
         case "ActorShootStart": {
             let { actor_id } = sim_command;
-            let maybe_found_process: Process | undefined = Object.values(world_state.processes)
+            let maybe_found_process: Process | undefined = Array.from(world_state.processes.values())
                 .find(p => p.payload.type === "EntityShoot" && p.entity_id === actor_id);
             let new_payload: ProcessPayload = { type: "EntityShoot", cooldown: 5, current_cooldown: 0 };
             let process = create_or_derive_process_payload(maybe_found_process, actor_id, new_payload, gen_new_id);
@@ -125,7 +125,7 @@ function produce_diff_from_command(
         }
         case "ActorShootStop": {
             let { actor_id } = sim_command;
-            return Object.values(world_state.processes)
+            return Array.from(world_state.processes.values())
                 .filter(p => p.payload.type === "EntityShoot" && p.entity_id === actor_id)
                 .map(p => ({ type: "DeleteProcess", id: p.id } as Diff))[0]
         }
@@ -165,7 +165,7 @@ function apply_diff_to_world (world: WorldState, diff: Diff): void {
         }
         case "DeleteEntity": {
             world.entities.delete(diff.id);
-            Object.values(world.processes).filter(x => x.entity_id === diff.id).forEach(x => world.processes.delete(x.id));
+            Array.from(world.processes.values()).filter(x => x.entity_id === diff.id).forEach(x => world.processes.delete(x.id));
             break;
         }
         case "DeleteProcess": {

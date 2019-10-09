@@ -17,7 +17,7 @@ export function apply_diff_to_world (world: WorldState, diff: Diff): void {
       }
       case "DeleteEntity": {
           world.entities.delete(diff.id);
-          Object.values(world.processes).filter(x => x.entity_id === diff.id).forEach(x => world.processes.delete(x.id));
+          Array.from(world.processes.values()).filter(x => x.entity_id === diff.id).forEach(x => world.processes.delete(x.id));
           break;
       }
       case "DeleteProcess": {

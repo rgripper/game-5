@@ -26,7 +26,7 @@ export default function({ worldState, children }: PropsWithChildren<{ worldState
       <WorldStateView worldState={worldState} />
 
       <ul style={{ listStyleType: "none" }}>
-        {Object.values(worldState.entities)
+        {Array.from(worldState.entities.values())
           .filter(x => x.behaviour_type === BehaviourType.Actor)
           .map(x => (
             <li key={x.id}>{JSON.stringify(x)}</li>
@@ -68,15 +68,15 @@ function WorldStateView({ worldState }: { worldState: WorldState }) {
       <tbody>
         <tr>
           <td>Number of entities:</td>
-          <td>{Object.values(worldState.entities).length}</td>
+          <td>{worldState.entities.size}</td>
         </tr>
         <tr>
           <td>Number of processes:</td>
-          <td>{Object.values(worldState.processes).length}</td>
+          <td>{worldState.processes.size}</td>
         </tr>
         <tr>
           <td>Number of players:</td>
-          <td>{Object.values(worldState.players).length}</td>
+          <td>{worldState.players.size}</td>
         </tr>
       </tbody>
     </table>
@@ -86,13 +86,13 @@ function WorldStateView({ worldState }: { worldState: WorldState }) {
 function InfoAtPosition({ worldState, position }: { worldState: WorldState; position?: Point }) {
   const entity =
     position &&
-    Object.values(worldState.entities).find(e =>
+    Array.from(worldState.entities.values()).find(e =>
       intersects(e.boundaries, {
         size: { width: 1, height: 2 },
         top_left: position
       })
     );
-  const processes = entity && Object.values(worldState.processes).filter(process => process.entity_id === entity.id);
+  const processes = entity && Array.from(worldState.processes.values()).filter(process => process.entity_id === entity.id);
 
   if (!entity || !processes || !position) {
     return <span>{position && <PointView point={position} />} No selection</span>;
