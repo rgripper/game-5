@@ -1,6 +1,6 @@
 import { SimCommand, Diff, update_world } from "./sim";
 import { WorldState, ID, Player, Entity, Process } from "./world";
-import { WorldParams } from "../server/sim";
+import { WorldParams } from "./sim";
 
 export class JavaScriptSimInterop {
     private world_state: WorldState;

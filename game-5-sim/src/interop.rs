@@ -39,7 +39,7 @@ impl SimInterop {
         }
     }
 
-    pub fn update (mut self, js_sim_commands: &JsValue) -> JsValue {
+    pub fn update (&mut self, js_sim_commands: &JsValue) -> JsValue {
         let sim_commands: Vec<SimCommand> = js_sim_commands.into_serde().unwrap();
         let diffs = update_world(&mut self.world_state, &sim_commands);
         JsValue::from_serde(&diffs).unwrap()

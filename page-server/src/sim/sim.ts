@@ -3,6 +3,10 @@ import { Radians } from "./geometry";
 import { affect_by_entity } from "./affects";
 import { copy_update_entity_by_process_payload } from "./behaviours";
 
+export type WorldParams = {
+    size: { width: number; height: number; };
+}
+
 export type Diff =
 | {
     type: "DeleteEntity" | "DeletePlayer" | "DeleteProcess";

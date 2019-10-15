@@ -1,32 +1,40 @@
-import { Observable, Observer, Subscription } from "rxjs";
-import { SimCommand, Diff } from "./sim/sim";
-import { SimServerEventData } from "./server/pipeline.worker";
-import { WorldParams } from "./server/sim";
+import { WorldParams, createClientOnChannel, ChannelClient } from "page-server";
 
-type UpdateStreamParams = {
+type CreatePipelineParams = {
     worldParams: WorldParams;
 }
 
-type Update = Diff[];
-
-type PipelineClient = {
-    subscribeInput: (input$: Observable<SimCommand>) => Subscription;
-    output$: Observable<Update>;
-}
-
-export function createPipeline (params: UpdateStreamParams): PipelineClient {
+export async function createPipeline (params: CreatePipelineParams): Promise<ChannelClient> {
     const simWorker = new Worker('./worker.js');
-    const postStart = (worldParams: WorldParams) => simWorker.postMessage({ type: 'Start', worldParams } as SimServerEventData, undefined as any);
-    const postCommand = (command: SimCommand) => simWorker.postMessage({ type: 'SimCommand', command } as SimServerEventData, undefined as any);
-    const postFinish = () => simWorker.postMessage({ type: 'Finish' } as SimServerEventData, undefined as any)
-    
-    postStart(params.worldParams);
 
-    return {
-        subscribeInput: (input$: Observable<SimCommand>) => input$.subscribe({ next: postCommand, complete: postFinish }),
-        output$: Observable.create((o: Observer<Update>) => {
-            simWorker.onmessage = (event: MessageEvent) => o.next(event.data as Update);
-            simWorker.onerror = ({ error }: ErrorEvent) => o.error({ error });
-        })
-    }
+    const peerConnection = new RTCPeerConnection({ 
+        iceServers: [{
+            urls: 'stun:stun1.l.google.com:19302', 
+            username: "spooky",
+            credential: "mulder"
+        }] 
+    });
+    const channel = peerConnection.createDataChannel('sim', { ordered: true });
+
+    return createClientOnChannel(channel, params.worldParams, 2000);
+
+    // const postStart = (worldParams: WorldParams) => simWorker.postMessage({ type: 'Start', worldParams } as SimServerEventData, undefined as any);
+    // const postCommand = (command: SimCommand) => simWorker.postMessage({ type: 'SimCommand', command } as SimServerEventData, undefined as any);
+    // const postFinish = () => simWorker.postMessage({ type: 'Finish' } as SimServerEventData, undefined as any)
+    
+    
+
+    // const connect = () => {
+    //     simWorker.removeEventListener("message", connect);
+    //     postStart(params.worldParams);
+    //     return {
+    //         subscribeInput: (input$: Observable<SimCommand>) => input$.subscribe({ next: postCommand, complete: postFinish }),
+    //         output$: Observable.create((o: Observer<Update>) => {
+    //             simWorker.onmessage = (event: MessageEvent) => o.next(event.data as Update);
+    //             simWorker.onerror = ({ error }: ErrorEvent) => o.error({ error });
+    //         })
+    //     }
+    // }
+
+    // simWorker.addEventListener("message", connect);
 }

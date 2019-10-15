@@ -2,8 +2,8 @@ import humanImage from '../assets/Human.png';
 import monsterImage from '../assets/Monster.png';
 import projectileImage from '../assets/Projectile.png';
 import * as PIXI from 'pixi.js';
-import { Entity, ModelType } from "../sim/world";
-import { Diff } from '../sim/sim';
+import { Entity, ModelType } from "../../../page-server/src/sim/world";
+import { Diff } from '../../../page-server/src/sim/sim';
 import { Observable, Subscriber, pipe } from 'rxjs';
 import { buffer, map, tap } from 'rxjs/operators';
 

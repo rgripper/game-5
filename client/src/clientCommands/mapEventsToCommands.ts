@@ -3,7 +3,7 @@ import { fromEvent, merge, Observable } from "rxjs";
 import { filter, map } from "rxjs/operators";
 import { FromEventTarget } from "rxjs/internal/observable/fromEvent";
 import { mapMovementKeysToCommands, MovementKeys } from "./MovementControl";
-import { SimCommand } from "../sim/sim";
+import { SimCommand } from "../../../page-server/src/sim/sim";
 
 type MapEventsToCommandsParams = { target: FromEventTarget<any>, movementKeys: MovementKeys, entityId: number }
 

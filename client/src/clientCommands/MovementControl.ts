@@ -1,7 +1,7 @@
 
 import { map, distinctUntilChanged, scan } from "rxjs/operators";
 import { Observable, merge } from "rxjs";
-import { SimCommand } from "../sim/sim";
+import { SimCommand } from "../../../page-server/src/sim/sim";
 import { getRadians } from "./createCommands";
 
 enum AxisState { Negative, Positive }

@@ -3,16 +3,13 @@ import * as PIXI from 'pixi.js';
 import { createRenderingPipe } from './rendering/rendering';
 import { concat } from 'rxjs';
 import DebugView, { createDebuggingPipe } from './DebugView';
-import { createPipeline } from './SimClient';
-import { WorldState, Player, ID, Process, Entity } from './sim/world';
 import createCommands from './clientCommands/createCommands';
+import { WorldState, Player, ID, Process, Entity, ChannelClient, WorldParams } from 'page-server';
 
-function App () {
-  const worldParams = { size: { width: 500, height: 500 } };
-
+function App (props: { channelClient: ChannelClient, worldParams: WorldParams }) {
   // TODO: refactor duplicate init world
   const initialWorld: WorldState = {
-    boundaries: { top_left: { x: 0, y: 0 }, size: worldParams.size },
+    boundaries: { top_left: { x: 0, y: 0 }, size: props.worldParams.size },
     players: new Map<ID, Player>(),
     processes: new Map<ID, Process>(), 
     entities: new Map<ID, Entity>(), 
@@ -27,21 +24,17 @@ function App () {
     }
 
     const gameView = gameViewRef.current;
-    const app = new PIXI.Application({backgroundColor : 0xFFAAFF, ...worldParams.size});
+    const app = new PIXI.Application({backgroundColor : 0xFFAAFF, ...props.worldParams.size});
     gameView.appendChild(app.view);
 
     const commandSet = createCommands();
     const commands$ = concat(commandSet.initCommands$, commandSet.controlCommands$);
-
-    const pipelineClient = createPipeline({ worldParams });
     
-    const subscription = pipelineClient.output$.pipe(
+    const subscription = props.channelClient.cycleOutputs.pipe(
         createRenderingPipe(app), 
         createDebuggingPipe(initialWorld, setDebuggedWorld)
       )
       .subscribe();
-    
-    pipelineClient.subscribeInput(commands$);
 
     return () => subscription.unsubscribe();
   }, []);

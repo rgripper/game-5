@@ -1,8 +1,8 @@
-import { Entity, Player, BehaviourType, ModelType } from "../sim/world";
+import { Entity, Player, BehaviourType, ModelType } from "../../../page-server/src/sim/world";
 import { mapEventsToCommands } from "./mapEventsToCommands";
-import { SimCommand, gen_new_id } from "../sim/sim";
+import { SimCommand, gen_new_id } from "../../../page-server/src/sim/sim";
 import { from } from "rxjs";
-import { Radians } from "../sim/geometry";
+import { Radians } from "../../../page-server/src/sim/geometry";
 
 export function getRadians(angle: number): Radians {
     return (angle * Math.PI)/ 180;

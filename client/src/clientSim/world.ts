@@ -1,5 +1,5 @@
-import { WorldState } from "../sim/world";
-import { Diff } from "../sim/sim";
+import { WorldState } from "../../../page-server/src/sim/world";
+import { Diff } from "../../../page-server/src/sim/sim";
 
 export function apply_diff_to_world (world: WorldState, diff: Diff): void {
   switch (diff.type) {

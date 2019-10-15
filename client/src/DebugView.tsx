@@ -1,9 +1,9 @@
 import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { Point, intersects } from "./sim/geometry";
-import { Entity, WorldState, BehaviourType, Player, Process, ID } from "./sim/world";
+import { Point, intersects } from "../../page-server/src/sim/geometry";
+import { Entity, WorldState, BehaviourType, Player, Process, ID } from "../../page-server/src/sim/world";
 import { fromEvent } from "rxjs";
 import { tap } from "rxjs/operators";
-import { Diff } from "./sim/sim";
+import { Diff } from "../../page-server/src/sim/sim";
 import { apply_diff_to_world } from "./clientSim/world";
 
 export default function({ worldState, children }: PropsWithChildren<{ worldState: WorldState }>) {
