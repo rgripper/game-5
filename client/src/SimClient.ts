@@ -5,8 +5,6 @@ type CreatePipelineParams = {
 }
 
 export async function createPipeline (params: CreatePipelineParams): Promise<ChannelClient> {
-    const simWorker = new Worker('./worker.js');
-
     const peerConnection = new RTCPeerConnection({ 
         iceServers: [{
             urls: 'stun:stun1.l.google.com:19302', 
@@ -16,7 +14,9 @@ export async function createPipeline (params: CreatePipelineParams): Promise<Cha
     });
     const channel = peerConnection.createDataChannel('sim', { ordered: true });
 
-    return createClientOnChannel(channel, params.worldParams, 2000);
+    return new Promise(resolve => {
+        resolve(createClientOnChannel(channel, params.worldParams, 2000));
+    });
 
     // const postStart = (worldParams: WorldParams) => simWorker.postMessage({ type: 'Start', worldParams } as SimServerEventData, undefined as any);
     // const postCommand = (command: SimCommand) => simWorker.postMessage({ type: 'SimCommand', command } as SimServerEventData, undefined as any);

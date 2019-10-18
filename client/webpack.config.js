@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const WorkerPlugin = require('worker-plugin');
 
-const appConfig = {
+module.exports = {
   mode: 'development',
   entry: {
     app: './src/index.tsx'
@@ -47,31 +47,31 @@ const appConfig = {
   }
 };
 
-const workerConfig = {
-  entry: "./src/server/pipeline.worker.ts",
-  target: "webworker",
-  mode: 'development',
-  // plugins: [
-  //   new WasmPackPlugin({
-  //     crateDirectory: path.resolve(__dirname, "../crate-wasm")
-  //   })
-  // ],
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      }
-    ]
-  },
-  resolve: {
-    extensions: [".ts", ".js", ".wasm"]
-  },
-  output: {
-    path: path.resolve(__dirname, 'build'),
-    filename: "worker.js"
-  }
-};
+// const workerConfig = {
+//   entry: "./src/server/pipeline.worker.ts",
+//   target: "webworker",
+//   mode: 'development',
+//   // plugins: [
+//   //   new WasmPackPlugin({
+//   //     crateDirectory: path.resolve(__dirname, "../crate-wasm")
+//   //   })
+//   // ],
+//   module: {
+//     rules: [
+//       {
+//         test: /\.tsx?$/,
+//         use: 'ts-loader',
+//         exclude: /node_modules/,
+//       }
+//     ]
+//   },
+//   resolve: {
+//     extensions: [".ts", ".js", ".wasm"]
+//   },
+//   output: {
+//     path: path.resolve(__dirname, 'build'),
+//     filename: "worker.js"
+//   }
+// };
 
-module.exports = [appConfig, workerConfig];
+// module.exports = [appConfig, workerConfig];
