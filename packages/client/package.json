@@ -1,5 +1,5 @@
 {
-  "name": "tmp",
+  "name": "client",
   "version": "0.1.1",
   "main": "index.js",
   "license": "MIT",
@@ -9,25 +9,10 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
-  "devDependencies": {
-    "@types/pixi.js": "^4.8.9",
-    "@types/react": "^16.9.6",
-    "@types/react-dom": "^16.9.2",
-    "clean-webpack-plugin": "^3.0.0",
-    "file-loader": "^4.2.0",
-    "html-webpack-plugin": "^3.2.0",
-    "ts-loader": "^6.2.0",
-    "typescript": "^3.6.4",
-    "webpack": "^4.41.1",
-    "webpack-cli": "^3.3.9",
-    "webpack-dev-server": "^3.8.2",
-    "worker-loader": "^2.0.0",
-    "worker-plugin": "^3.2.0"
-  },
   "dependencies": {
     "emotion": "^10.0.17",
     "gh-pages": "^2.1.1",
-    "page-server": "../page-server",
+    "page-server": "file:../page-server",
     "pixi.js": "^5.1.5",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
