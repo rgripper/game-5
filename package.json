@@ -1,6 +1,9 @@
 {
   "name": "root",
   "private": true,
+  "scripts": {
+    "start": "lerna run start --parallel"
+  },
   "devDependencies": {
     "@types/pixi.js": "^4.8.9",
     "@types/react": "^16.9.6",
@@ -20,8 +23,16 @@
     "worker-loader": "^2.0.0",
     "worker-plugin": "^3.2.0"
   },
+  "dependencies": {
+    "client": "file:packages\\client",
+    "page-server": "file:packages\\page-server"
+  },
+  "workspaces": [
+    "packages/client",
+    "packages/server"
+  ],
   "lint-staged": {
-    "*.{ts, json}": [
+    "*.{ts,tsx,json}": [
       "prettier --write",
       "git add"
     ]
@@ -30,9 +41,5 @@
     "hooks": {
       "pre-commit": "lint-staged"
     }
-  },
-  "dependencies": {
-    "client": "file:packages\\client",
-    "page-server": "file:packages\\page-server"
   }
 }
