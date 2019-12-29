@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "webpack-dev-server"
+    "start": "webpack-dev-server --port 9020"
   },
   "dependencies": {
     "rxjs": "^6.5.3"

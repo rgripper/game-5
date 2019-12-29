@@ -4,18 +4,24 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "webpack-dev-server",
+    "start": "webpack-dev-server --port 9010",
     "build": "yarn webpack",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
   "dependencies": {
+    "@apollo/react-hooks": "^3.1.3",
+    "apollo-boost": "^0.4.7",
     "emotion": "^10.0.17",
-    "gh-pages": "^2.1.1",
-    "page-server": "file:../page-server",
+    "graphql": "^14.5.8",
     "pixi.js": "^5.1.5",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
+    "react-router-dom": "^5.1.2",
     "rxjs": "^6.5.3"
+  },
+  "devDependencies": {
+    "@types/react-router-dom": "^5.1.3",
+    "gh-pages": "^2.1.1"
   }
 }

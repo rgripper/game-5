@@ -2,6 +2,7 @@
   "name": "server",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "license": "MIT",
   "scripts": {
     "jest": "jest",
@@ -19,6 +20,7 @@
     "@types/jest": "^24.0.25",
     "@types/node": "^13.1.1",
     "@types/uuid": "^3.4.6",
-    "@types/ws": "^6.0.4"
+    "@types/ws": "^6.0.4",
+    "typescript": "^3.7.4"
   }
 }
