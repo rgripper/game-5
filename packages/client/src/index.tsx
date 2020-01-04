@@ -2,6 +2,38 @@ import React from "react";
 import ReactDOM from "react-dom";
 import * as serviceWorker from "./serviceWorker";
 import App from "./App";
+import { injectGlobal } from "emotion";
+import { units, colors, fontWeights } from "./styles";
+
+injectGlobal`
+    html * {
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    > * {
+        box-sizing: border-box;
+    }
+    body, body > * {
+        margin: 0;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    #root {
+      max-width: ${units(70)};
+      margin: 0 auto;
+    }
+
+    button {
+      font-size: ${units(4)};
+      padding: ${units(2)} ${units(4)};
+      border: 0;
+      background-color: ${colors.primary};
+      color: ${colors.invertedText};
+      font-weight: ${fontWeights.bold};
+      transition: all 0.2s;
+    }
+`;
 
 ReactDOM.render(<App />, document.getElementById("root"));
 
