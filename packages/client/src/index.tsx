@@ -19,6 +19,10 @@ injectGlobal`
         height: 100vh;
     }
 
+    fieldset {
+      border: 0;
+    }
+
     #root {
       max-width: ${units(70)};
       margin: 0 auto;
@@ -28,10 +32,14 @@ injectGlobal`
       font-size: ${units(4)};
       padding: ${units(2)} ${units(4)};
       border: 0;
-      background-color: ${colors.primary};
+      background-color: ${colors.primaryDark};
       color: ${colors.invertedText};
       font-weight: ${fontWeights.bold};
-      transition: all 0.2s;
+      transition: all 0.1s;
+      &:hover {
+        cursor: pointer;
+        background-color: ${colors.primary};
+      }
     }
 `;
 

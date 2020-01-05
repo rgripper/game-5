@@ -8,7 +8,7 @@ const fieldInput = css`
   border-width: ${units(0.5)};
   border-style: solid;
   border-color: ${colors.primaryDark};
-  transition: all 0.2s;
+  transition: all 0.1s;
 
   &:focus {
     border-color: ${colors.primary};
