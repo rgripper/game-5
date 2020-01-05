@@ -6,7 +6,11 @@
   "license": "MIT",
   "scripts": {
     "jest": "jest",
-    "test": "jest src"
+    "test": "jest src",
+    "tsc": "tsc",
+    "compile-watch": "tsc -w",
+    "dist-watch": "nodemon dist/index.js",
+    "start": "npm-run-all --parallel compile-watch dist-watch"
   },
   "dependencies": {
     "apollo-server": "^2.9.14",
