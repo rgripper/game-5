@@ -2,6 +2,12 @@ import WebSocket from "ws";
 import uuid from "uuid/v1";
 import { BehaviorSubject } from "rxjs";
 import { URLSearchParams } from "url";
+import {
+  ApolloServer,
+  gql,
+  IResolvers,
+  AuthenticationError
+} from "apollo-server";
 
 //const wss = new WebSocket.Server({ port: 9000 });
 export function createServer(
@@ -63,25 +69,29 @@ export function createRoomService(roomState$: BehaviorSubject<RoomState>) {
   };
 
   return {
-    join(name: string) {
+    login(name: string) {
       throwIfNotStarted();
 
       if (roomState$.value.players.some(x => x.name === name)) {
         throw new Error(`Player '${name}' has already been added`);
       }
 
+      const id = uuid();
+
       roomState$.next({
         ...roomState$.value,
         players: [
           ...roomState$.value.players,
           {
-            id: uuid(),
+            id,
             isChannelConnected: false,
             name,
             state: PlayerState.NotReady
           }
         ]
       });
+
+      return id;
     },
     unready(playerId: string) {
       throwIfNotStarted();
@@ -137,3 +147,83 @@ export function createRoomService(roomState$: BehaviorSubject<RoomState>) {
     }
   };
 }
+
+const typeDefs = gql`
+  type Mutation {
+    login(name: String!): ID!
+
+    unready(): Boolean
+    ready(): Boolean
+    setConnected(value: Boolean!): Boolean
+  }
+`;
+
+const roomState$ = new BehaviorSubject(RoomState.initial);
+
+type CustomContext = { roomService: RoomService };
+
+type AuthCustomContext = { roomService: RoomService; userId: string };
+
+type ResolverMap = {
+  Mutation: IResolvers<any, CustomContext>;
+};
+
+type MutationResolver<TContext extends { userId?: string }, TResult> = (
+  object: unknown,
+  args: any,
+  context: TContext
+) => TResult;
+
+const auth = <TObj, TArgs, TContext extends { userId: string }, TResult>(
+  func: MutationResolver<TContext, TResult>
+) => {
+  (object: TObj, args: TArgs, context: TContext) => {
+    if (!context.userId) {
+      throw new AuthenticationError("Must be authenticated");
+    }
+    return func(object, args, context);
+  };
+};
+
+const apolloServer = new ApolloServer({
+  typeDefs,
+  context: ({ req }) => {
+    const token = req.headers.authorization;
+
+    // try to retrieve a user with the token
+    const userId = token;
+
+    // optionally block the user
+    // we could also check user roles/permissions here
+    if (!userId) throw new AuthenticationError("You must be logged in");
+
+    // add the user to the context
+    return { userId, roomService: createRoomService(roomState$) };
+  },
+  resolvers: {
+    Mutation: {
+      login: (
+        object: unknown,
+        { name }: { name: string },
+        context: CustomContext
+      ) => {
+        return context.roomService.login(name);
+      },
+      ready: auth((object, args, context: AuthCustomContext) => {
+        context.roomService.ready(context.userId);
+        return null;
+      }),
+      unready: auth((object, args, context: AuthCustomContext) => {
+        context.roomService.unready(context.userId);
+        return null;
+      }),
+      setConnected: auth((object, { value }, context: AuthCustomContext) => {
+        context.roomService.setConnected(context.userId, value);
+        return null;
+      })
+    }
+  } as any,
+  cors: true
+});
+
+apolloServer.listen(3434); // TODO: make a setting

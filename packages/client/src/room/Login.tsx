@@ -12,9 +12,9 @@ const container = css`
   align-items: center;
 `;
 
-const LOGIN_QUERY = gql`
-  query join($name: String!) {
-    join(args: { name: $name }) {
+const LOGIN_MUTATION = gql`
+  mutation join($name: String!) {
+    join(name: $name) {
       playerId
     }
   }
@@ -24,7 +24,7 @@ function Login() {
   const [serverUrl, setServerUrl] = useState("http://localhost:3434");
   const [name, setName] = useState("OrangeGore");
 
-  const [login, { loading, error }] = useMutation(LOGIN_QUERY, {
+  const [login, { loading, error }] = useMutation(LOGIN_MUTATION, {
     client: new ApolloClient({
       uri: serverUrl
     })
@@ -35,7 +35,8 @@ function Login() {
       <form
         onSubmitCapture={async event => {
           event.preventDefault();
-          const result = await login({ variables: { name } });
+          const token = await login({ variables: { name } });
+          // TODO: store token in // headers: { authorization: { token } } (store the client in the apollo cache?)
         }}
       >
         <fieldset disabled={loading}>
