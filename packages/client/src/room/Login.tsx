@@ -13,10 +13,8 @@ const container = css`
 `;
 
 const LOGIN_MUTATION = gql`
-  mutation join($name: String!) {
-    join(name: $name) {
-      playerId
-    }
+  mutation login($name: String!) {
+    login(name: $name)
   }
 `;
 
@@ -35,7 +33,8 @@ function Login() {
       <form
         onSubmitCapture={async event => {
           event.preventDefault();
-          const token = await login({ variables: { name } });
+          const result = await login({ variables: { name } });
+          alert(result.data.login);
           // TODO: store token in // headers: { authorization: { token } } (store the client in the apollo cache?)
         }}
       >

@@ -149,11 +149,15 @@ export function createRoomService(roomState$: BehaviorSubject<RoomState>) {
 }
 
 const typeDefs = gql`
+  type Query {
+    dummy: String
+  }
+
   type Mutation {
     login(name: String!): ID!
 
-    unready(): Boolean
-    ready(): Boolean
+    unready: Boolean
+    ready: Boolean
     setConnected(value: Boolean!): Boolean
   }
 `;
@@ -162,7 +166,7 @@ const roomState$ = new BehaviorSubject(RoomState.initial);
 
 type CustomContext = { roomService: RoomService };
 
-type AuthCustomContext = { roomService: RoomService; userId: string };
+type AuthCustomContext = CustomContext & { userId: string };
 
 type ResolverMap = {
   Mutation: IResolvers<any, CustomContext>;
@@ -177,7 +181,7 @@ type MutationResolver<TContext extends { userId?: string }, TResult> = (
 const auth = <TObj, TArgs, TContext extends { userId: string }, TResult>(
   func: MutationResolver<TContext, TResult>
 ) => {
-  (object: TObj, args: TArgs, context: TContext) => {
+  return (object: TObj, args: TArgs, context: TContext) => {
     if (!context.userId) {
       throw new AuthenticationError("Must be authenticated");
     }
@@ -192,10 +196,6 @@ const apolloServer = new ApolloServer({
 
     // try to retrieve a user with the token
     const userId = token;
-
-    // optionally block the user
-    // we could also check user roles/permissions here
-    if (!userId) throw new AuthenticationError("You must be logged in");
 
     // add the user to the context
     return { userId, roomService: createRoomService(roomState$) };

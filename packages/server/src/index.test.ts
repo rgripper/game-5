@@ -6,9 +6,9 @@ describe(createRoomService, () => {
     const roomState$ = new BehaviorSubject(RoomState.initial);
     const roomService = createRoomService(roomState$);
     expect(roomState$.value.players.length).toBe(0);
-    roomService.join("BloodyOrange");
+    roomService.login("BloodyOrange");
     expect(roomState$.value.players.length).toBe(1);
-    roomService.join("MoomooKing");
+    roomService.login("MoomooKing");
     expect(roomState$.value.players.length).toBe(2);
     expect(roomState$.value.players[0].state).toBe(PlayerState.NotReady);
     const playerId = roomState$.value.players[0].id;
