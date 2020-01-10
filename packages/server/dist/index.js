@@ -48,8 +48,9 @@ function createRoomService(roomState$) {
     return {
         login(name) {
             throwIfNotStarted();
-            if (roomState$.value.players.some(x => x.name === name)) {
-                throw new Error(`Player '${name}' has already been added`);
+            const player = roomState$.value.players.find(x => x.name === name);
+            if (player) {
+                return player.id;
             }
             const id = v1_1.default();
             roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: [
