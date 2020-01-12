@@ -94,38 +94,23 @@ export function createRoomService(roomState$: BehaviorSubject<RoomState>) {
 
       return id;
     },
-    unready(playerId: string) {
+    setReady(playerId: string, isReady: boolean) {
       throwIfNotStarted();
       const player = roomState$.value.players.find(x => x.id === playerId);
       if (!player) {
         throw new Error(`Could not find player by id ${playerId}`);
       }
-      if (player.state === PlayerState.NotReady) {
-        throw new Error(`Player must be in Ready state to unready`);
+
+      const newState = isReady ? PlayerState.Ready : PlayerState.NotReady;
+
+      if (player.state === newState) {
+        throw new Error(`Player must be in ${PlayerState[newState]} state`);
       }
 
       roomState$.next({
         ...roomState$.value,
         players: roomState$.value.players.map(x =>
-          x.id === playerId ? { ...x, state: PlayerState.NotReady } : x
-        )
-      });
-    },
-    ready(playerId: string) {
-      throwIfNotStarted();
-
-      const player = roomState$.value.players.find(x => x.id === playerId);
-      if (!player) {
-        throw new Error(`Could not find player by id ${playerId}`);
-      }
-      if (player.state === PlayerState.Ready) {
-        throw new Error(`Player must be in NotReady state to unready`);
-      }
-
-      roomState$.next({
-        ...roomState$.value,
-        players: roomState$.value.players.map(x =>
-          x.id === playerId ? { ...x, state: PlayerState.Ready } : x
+          x.id === playerId ? { ...x, state: newState } : x
         )
       });
     },
@@ -157,8 +142,7 @@ const typeDefs = gql`
   type Mutation {
     login(name: String!): ID!
 
-    unready: Boolean
-    ready: Boolean
+    setReady(isReady: Boolean!): Boolean
     setConnected(value: Boolean!): Boolean
   }
 `;
@@ -210,12 +194,8 @@ const apolloServer = new ApolloServer({
       ) => {
         return context.roomService.login(name);
       },
-      ready: auth((object, args, context: AuthCustomContext) => {
-        context.roomService.ready(context.userId);
-        return null;
-      }),
-      unready: auth((object, args, context: AuthCustomContext) => {
-        context.roomService.unready(context.userId);
+      setReady: auth((object, { isReady }, context: AuthCustomContext) => {
+        context.roomService.setReady(context.userId, isReady);
         return null;
       }),
       setConnected: auth((object, { value }, context: AuthCustomContext) => {

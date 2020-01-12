@@ -5,6 +5,8 @@ export function units(value: number) {
 export const colors = {
   border: "#0086c3",
 
+  inactive: "#B0BEC5",
+
   primary: "#ff5722",
   primaryLight: "#ff8a50",
   primaryDark: "#c41c00",

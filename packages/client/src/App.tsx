@@ -4,6 +4,7 @@ import { Switch, Route, Router, Redirect } from "react-router";
 import { createBrowserHistory } from "history";
 import Login from "./room/Login";
 import { ApolloProvider, ApolloClient } from "@apollo/client";
+import Room from "./room/Room";
 
 const history = createBrowserHistory();
 
@@ -23,7 +24,8 @@ function App() {
       <Router history={history}>
         <Switch>
           <Route path="/game" component={GameView} />
-          <Redirect to="/game" />
+          <Route path="/room" component={Room} />
+          <Redirect to="/room" />
         </Switch>
       </Router>
     </ApolloProvider>

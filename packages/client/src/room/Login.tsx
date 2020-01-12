@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { css } from "emotion";
 import { Field } from "../shared/Field";
 import gql from "graphql-tag";
@@ -14,6 +14,7 @@ const container = css`
   height: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
 `;
 
 const LOGIN_MUTATION = gql`

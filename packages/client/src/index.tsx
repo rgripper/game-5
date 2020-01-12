@@ -24,7 +24,7 @@ injectGlobal`
     }
 
     #root {
-      max-width: ${units(70)};
+      max-width: ${units(280)};
       margin: 0 auto;
     }
 

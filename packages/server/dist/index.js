@@ -64,27 +64,17 @@ function createRoomService(roomState$) {
                 ] }));
             return id;
         },
-        unready(playerId) {
+        setReady(playerId, isReady) {
             throwIfNotStarted();
             const player = roomState$.value.players.find(x => x.id === playerId);
             if (!player) {
                 throw new Error(`Could not find player by id ${playerId}`);
             }
-            if (player.state === PlayerState.NotReady) {
-                throw new Error(`Player must be in Ready state to unready`);
+            const newState = isReady ? PlayerState.Ready : PlayerState.NotReady;
+            if (player.state === newState) {
+                throw new Error(`Player must be in ${PlayerState[newState]} state`);
             }
-            roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: roomState$.value.players.map(x => (x.id === playerId ? Object.assign(Object.assign({}, x), { state: PlayerState.NotReady }) : x)) }));
-        },
-        ready(playerId) {
-            throwIfNotStarted();
-            const player = roomState$.value.players.find(x => x.id === playerId);
-            if (!player) {
-                throw new Error(`Could not find player by id ${playerId}`);
-            }
-            if (player.state === PlayerState.Ready) {
-                throw new Error(`Player must be in NotReady state to unready`);
-            }
-            roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: roomState$.value.players.map(x => (x.id === playerId ? Object.assign(Object.assign({}, x), { state: PlayerState.Ready }) : x)) }));
+            roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: roomState$.value.players.map(x => (x.id === playerId ? Object.assign(Object.assign({}, x), { state: newState }) : x)) }));
         },
         setConnected(playerId, value) {
             roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: roomState$.value.players.map(x => (x.id === playerId ? Object.assign(Object.assign({}, x), { isChannelConnected: value }) : x)) }));
@@ -106,8 +96,7 @@ const typeDefs = apollo_server_1.gql `
   type Mutation {
     login(name: String!): ID!
 
-    unready: Boolean
-    ready: Boolean
+    setReady(isReady: Boolean!): Boolean
     setConnected(value: Boolean!): Boolean
   }
 `;
@@ -134,12 +123,8 @@ const apolloServer = new apollo_server_1.ApolloServer({
             login: (object, { name }, context) => {
                 return context.roomService.login(name);
             },
-            ready: auth((object, args, context) => {
-                context.roomService.ready(context.userId);
-                return null;
-            }),
-            unready: auth((object, args, context) => {
-                context.roomService.unready(context.userId);
+            setReady: auth((object, { isReady }, context) => {
+                context.roomService.setReady(context.userId, isReady);
                 return null;
             }),
             setConnected: auth((object, { value }, context) => {

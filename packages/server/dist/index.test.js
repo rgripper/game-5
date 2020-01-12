@@ -13,10 +13,10 @@ describe(_1.createRoomService, () => {
         expect(roomState$.value.players.length).toBe(2);
         expect(roomState$.value.players[0].state).toBe(_1.PlayerState.NotReady);
         const playerId = roomState$.value.players[0].id;
-        roomService.ready(playerId);
+        roomService.setReady(playerId, true);
         // TODO: add throw
         expect(roomState$.value.players[0].state).toBe(_1.PlayerState.Ready);
-        roomService.unready(playerId);
+        roomService.setReady(playerId, false);
         expect(roomState$.value.players[0].state).toBe(_1.PlayerState.NotReady);
         // TODO: add throw
         expect(roomState$.value.players[0].isChannelConnected).toBe(false);
