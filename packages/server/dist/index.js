@@ -5,21 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const v1_1 = __importDefault(require("uuid/v1"));
 const rxjs_1 = require("rxjs");
-const url_1 = require("url");
 const apollo_server_1 = require("apollo-server");
-//const wss = new WebSocket.Server({ port: 9000 });
-function createServer(roomService, wss) {
-    wss.on("connection", function connection(ws) {
-        const params = new url_1.URLSearchParams(ws.url);
-        const playerId = params.get("playerId");
-        if (!playerId) {
-            throw new Error(`PlayerId must be specified`);
-        }
-        roomService.setConnected(playerId, true);
-        ws.on("close", () => roomService.setConnected(playerId, false));
-    });
-}
-exports.createServer = createServer;
 var PlayerState;
 (function (PlayerState) {
     PlayerState[PlayerState["NotReady"] = 0] = "NotReady";
@@ -38,6 +24,7 @@ exports.RoomState = {
         maxPlayers: 8
     }
 };
+const pubSub = new apollo_server_1.PubSub();
 //  let roomState$ = new BehaviorSubject<RoomState>();
 function createRoomService(roomState$) {
     const throwIfNotStarted = () => {
@@ -93,11 +80,21 @@ const typeDefs = apollo_server_1.gql `
     dummy: String
   }
 
+  type Player {
+    id: ID!
+    name: String!
+    isReady: Boolean!
+  }
+
   type Mutation {
     login(name: String!): ID!
 
     setReady(isReady: Boolean!): Boolean
     setConnected(value: Boolean!): Boolean
+  }
+
+  type Subscription {
+    playersUpdated: [Player!]
   }
 `;
 const roomState$ = new rxjs_1.BehaviorSubject(exports.RoomState.initial);
@@ -131,8 +128,16 @@ const apolloServer = new apollo_server_1.ApolloServer({
                 context.roomService.setConnected(context.userId, value);
                 return null;
             })
+        },
+        Subscription: {
+            playersUpdated: {
+                subscribe: () => pubSub.asyncIterator("playersUpdated")
+            }
         }
     },
     cors: true
 });
-apolloServer.listen(3434); // TODO: make a setting
+apolloServer.listen(5000).then(({ url, subscriptionsUrl }) => {
+    console.log(`🚀 Server ready at ${url}`);
+    console.log(`🚀 Subscriptions ready at ${subscriptionsUrl}`);
+}); // TODO: make a setting

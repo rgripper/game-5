@@ -5,8 +5,16 @@ import { createBrowserHistory } from "history";
 import Login from "./room/Login";
 import { ApolloProvider, ApolloClient } from "@apollo/client";
 import Room from "./room/Room";
+import { WebSocketLink } from "apollo-link-ws";
 
 const history = createBrowserHistory();
+
+const wsLink = new WebSocketLink({
+  uri: `ws://localhost:5000/`,
+  options: {
+    reconnect: true
+  }
+});
 
 function App() {
   const [client, setClient] = useState<ApolloClient<any> | null>(null);

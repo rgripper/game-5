@@ -6,25 +6,9 @@ import {
   ApolloServer,
   gql,
   IResolvers,
-  AuthenticationError
+  AuthenticationError,
+  PubSub
 } from "apollo-server";
-
-//const wss = new WebSocket.Server({ port: 9000 });
-export function createServer(
-  roomService: Pick<RoomService, "setConnected">,
-  wss: Pick<WebSocket.Server, "on">
-) {
-  wss.on("connection", function connection(ws) {
-    const params = new URLSearchParams(ws.url);
-    const playerId = params.get("playerId");
-
-    if (!playerId) {
-      throw new Error(`PlayerId must be specified`);
-    }
-    roomService.setConnected(playerId, true);
-    ws.on("close", () => roomService.setConnected(playerId, false));
-  });
-}
 
 export enum PlayerState {
   NotReady,
@@ -60,6 +44,7 @@ export const RoomState: { initial: RoomState } = {
 
 export type RoomService = ReturnType<typeof createRoomService>;
 
+const pubSub = new PubSub();
 //  let roomState$ = new BehaviorSubject<RoomState>();
 export function createRoomService(roomState$: BehaviorSubject<RoomState>) {
   const throwIfNotStarted = () => {
@@ -139,11 +124,21 @@ const typeDefs = gql`
     dummy: String
   }
 
+  type Player {
+    id: ID!
+    name: String!
+    isReady: Boolean!
+  }
+
   type Mutation {
     login(name: String!): ID!
 
     setReady(isReady: Boolean!): Boolean
     setConnected(value: Boolean!): Boolean
+  }
+
+  type Subscription {
+    playersUpdated: [Player!]
   }
 `;
 
@@ -152,10 +147,6 @@ const roomState$ = new BehaviorSubject(RoomState.initial);
 type CustomContext = { roomService: RoomService };
 
 type AuthCustomContext = CustomContext & { userId: string };
-
-type ResolverMap = {
-  Mutation: IResolvers<any, CustomContext>;
-};
 
 type MutationResolver<TContext extends { userId?: string }, TResult> = (
   object: unknown,
@@ -202,9 +193,17 @@ const apolloServer = new ApolloServer({
         context.roomService.setConnected(context.userId, value);
         return null;
       })
+    },
+    Subscription: {
+      playersUpdated: {
+        subscribe: () => pubSub.asyncIterator("playersUpdated")
+      }
     }
   } as any,
   cors: true
 });
 
-apolloServer.listen(3434); // TODO: make a setting
+apolloServer.listen(5000).then(({ url, subscriptionsUrl }) => {
+  console.log(`🚀 Server ready at ${url}`);
+  console.log(`🚀 Subscriptions ready at ${subscriptionsUrl}`);
+}); // TODO: make a setting

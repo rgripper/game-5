@@ -7,8 +7,12 @@ import {
   ApolloClient,
   InMemoryCache,
   ApolloClientOptions,
-  NormalizedCacheObject
+  NormalizedCacheObject,
+  getMainDefinition,
+  split,
+  HttpLink
 } from "@apollo/client";
+import { WebSocketLink } from "apollo-link-ws";
 
 const container = css`
   height: 100%;
@@ -23,12 +27,39 @@ const LOGIN_MUTATION = gql`
   }
 `;
 
+const httpLink = new HttpLink({
+  uri: "http://localhost:3000/graphql"
+});
+
+//Create a WebSocket link:
+const wsLink = new WebSocketLink({
+  uri: `ws://localhost:5000/`,
+  options: {
+    reconnect: true
+  }
+});
+
+// using the ability to split links, you can send data to each link
+// depending on what kind of operation is being sent
+const link = split(
+  // split based on operation type
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === "OperationDefinition" &&
+      definition.operation === "subscription"
+    );
+  },
+  wsLink as any,
+  httpLink
+);
+
 function Login(props: {
   onClientOptions: (
     options: ApolloClientOptions<NormalizedCacheObject>
   ) => void;
 }) {
-  const [serverUrl, setServerUrl] = useState("http://localhost:3434");
+  const [serverUrl, setServerUrl] = useState("ws://localhost:5000/graphql"); //"http://localhost:3434");
   const [name, setName] = useState("OrangeGore");
 
   const [login, { loading, error }] = useMutation(LOGIN_MUTATION, {
@@ -46,9 +77,19 @@ function Login(props: {
           const result = await login({ variables: { name } });
           const token = result.data.login;
           props.onClientOptions({
-            uri: serverUrl,
+            //uri: serverUrl,
             cache: new InMemoryCache({}),
-            headers: { authorization: token }
+            //headers: { authorization: token },
+
+            link: new WebSocketLink({
+              uri: `ws://localhost:5000/graphql`,
+              options: {
+                reconnect: true,
+                connectionParams: {
+                  authToken: token
+                }
+              }
+            }) as any
           });
         }}
       >

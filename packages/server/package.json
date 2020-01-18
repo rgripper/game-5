@@ -14,8 +14,10 @@
   "dependencies": {
     "apollo-server": "^2.9.14",
     "graphql": "^14.5.8",
+    "graphql-subscriptions": "^1.1.0",
     "graphql-tag": "^2.10.1",
     "rxjs": "^6.5.3",
+    "subscriptions-transport-ws": "^0.9.16",
     "ts-jest": "^24.2.0",
     "uuid": "^3.3.3",
     "ws": "^7.2.0"

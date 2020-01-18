@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { css } from "emotion";
 import gql from "graphql-tag";
-import { useMutation } from "@apollo/client";
+import { useMutation, useSubscription } from "@apollo/client";
 import { units, colors } from "../styles";
 
 const container = css`
@@ -29,6 +29,16 @@ const SET_READY_MUTATION = gql`
   }
 `;
 
+const PLAYERS_UPDATED_SUB = gql`
+  subscription onPlayersUpdated {
+    playersUpdated {
+      id
+      name
+      isReady
+    }
+  }
+`;
+
 const playerState = css`
   padding: ${units(4)};
   border: 1px solid ${colors.border};
@@ -47,6 +57,12 @@ const playerState = css`
     flex: 1;
   }
 `;
+
+type Player = {
+  id: string;
+  name: string;
+  isReady: boolean;
+};
 
 const readyIcon = (isReady: boolean) => css`
   width: 0;
@@ -68,14 +84,16 @@ function PlayerState(props: { isReady: boolean; name: string }) {
 
 function Room() {
   const [setReady, { loading, error }] = useMutation(SET_READY_MUTATION);
+  const { data } = useSubscription(PLAYERS_UPDATED_SUB);
+  const { players } = data as { players: Player[] };
   const currentPlayerId = "222";
-  const players = [
-    { isReady: true, name: "SomePlayer1 sdsadasdsa", id: "111" },
-    { isReady: true, name: "SomePlayer2", id: "222" },
-    { isReady: true, name: "SomePlayer3", id: "333" },
-    { isReady: false, name: "SomePlayer4", id: "444" },
-    { isReady: true, name: "SomePlayer5", id: "555" }
-  ];
+  // const players = [
+  //   { isReady: true, name: "SomePlayer1 sdsadasdsa", id: "111" },
+  //   { isReady: true, name: "SomePlayer2", id: "222" },
+  //   { isReady: true, name: "SomePlayer3", id: "333" },
+  //   { isReady: false, name: "SomePlayer4", id: "444" },
+  //   { isReady: true, name: "SomePlayer5", id: "555" }
+  // ];
   const isReady = false;
   return (
     <div className={container}>
