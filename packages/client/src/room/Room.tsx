@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { css } from "emotion";
 import gql from "graphql-tag";
-import { useMutation, useSubscription } from "@apollo/client";
 import { units, colors } from "../styles";
+import { useMutation, useSubscription, useQuery } from "@apollo/react-hooks";
 
 const container = css`
   height: 100%;
@@ -29,9 +29,19 @@ const SET_READY_MUTATION = gql`
   }
 `;
 
-const PLAYERS_UPDATED_SUB = gql`
-  subscription onPlayersUpdated {
-    playersUpdated {
+const PLAYERS_SUB = gql`
+  subscription onPlayers {
+    players {
+      id
+      name
+      isReady
+    }
+  }
+`;
+
+const PLAYERS_QUERY = gql`
+  query players {
+    players {
       id
       name
       isReady
@@ -84,33 +94,34 @@ function PlayerState(props: { isReady: boolean; name: string }) {
 
 function Room() {
   const [setReady, { loading, error }] = useMutation(SET_READY_MUTATION);
-  const { data } = useSubscription(PLAYERS_UPDATED_SUB);
-  const { players } = data as { players: Player[] };
+  const [hasInitData, setHasInitData] = useState<boolean>();
+  const initQuery = useQuery(PLAYERS_QUERY, { skip: hasInitData });
+  const subQuery = useSubscription(PLAYERS_SUB);
+  const players: Player[] | undefined =
+    subQuery.data?.players ?? initQuery.data?.players;
+
   const currentPlayerId = "222";
-  // const players = [
-  //   { isReady: true, name: "SomePlayer1 sdsadasdsa", id: "111" },
-  //   { isReady: true, name: "SomePlayer2", id: "222" },
-  //   { isReady: true, name: "SomePlayer3", id: "333" },
-  //   { isReady: false, name: "SomePlayer4", id: "444" },
-  //   { isReady: true, name: "SomePlayer5", id: "555" }
-  // ];
+
   const isReady = false;
   return (
-    <div className={container}>
-      <div className={playerList}>
-        {players.map(x => (
-          <PlayerState key={x.id} {...x} />
-        ))}
+    (players && (
+      <div className={container}>
+        <div className={playerList}>
+          {players.map((x) => (
+            <PlayerState key={x.id} {...x} />
+          ))}
+        </div>
+        <div>
+          <button
+            disabled={loading}
+            onClick={() => setReady({ variables: { isReady: !isReady } })}
+          >
+            {isReady ? "Unready" : "Ready"}
+          </button>
+        </div>
       </div>
-      <div>
-        <button
-          disabled={loading}
-          onClick={() => setReady({ variables: { isReady: !isReady } })}
-        >
-          {isReady ? "Unready" : "Ready"}
-        </button>
-      </div>
-    </div>
+    )) ??
+    null
   );
 }
 

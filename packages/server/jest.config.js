@@ -10,6 +10,6 @@ module.exports = {
     }
   },
   rootDir: path.join(__dirname, '../..'),
-  testMatch: [path.join(__dirname, '/**/?(*.)+(spec|test).[tj]s?(x)')],
+  testMatch: [path.join(__dirname, '/src/**/*.test.ts?(x)')],
   moduleFileExtensions: ['json', 'js', 'ts'],
 };

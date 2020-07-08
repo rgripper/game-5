@@ -1,127 +1,21 @@
 import WebSocket from "ws";
 import uuid from "uuid/v1";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, interval } from "rxjs";
 import { URLSearchParams } from "url";
 import {
   ApolloServer,
   gql,
   IResolvers,
   AuthenticationError,
-  PubSub
+  PubSub,
 } from "apollo-server";
-
-export enum PlayerState {
-  NotReady,
-  Ready
-}
-export enum HostState {
-  NotStarted,
-  Started
-}
-
-type Player = {
-  id: string;
-  isChannelConnected: boolean;
-  name: string;
-  state: PlayerState;
-};
-
-export type RoomState = {
-  players: Player[];
-  hostState: HostState;
-  minPlayers: number;
-  maxPlayers: number;
-};
-
-export const RoomState: { initial: RoomState } = {
-  initial: {
-    players: [],
-    hostState: HostState.NotStarted,
-    minPlayers: 1,
-    maxPlayers: 8
-  }
-};
-
-export type RoomService = ReturnType<typeof createRoomService>;
+import { RoomState, RoomService, createRoomService } from "./room-service";
 
 const pubSub = new PubSub();
-//  let roomState$ = new BehaviorSubject<RoomState>();
-export function createRoomService(roomState$: BehaviorSubject<RoomState>) {
-  const throwIfNotStarted = () => {
-    if (roomState$.value.hostState === HostState.Started) {
-      throw new Error(`Host must be in NotStarted state to accept a player`);
-    }
-  };
-
-  return {
-    login(name: string) {
-      throwIfNotStarted();
-
-      const player = roomState$.value.players.find(x => x.name === name);
-      if (player) {
-        return player.id;
-      }
-
-      const id = uuid();
-
-      roomState$.next({
-        ...roomState$.value,
-        players: [
-          ...roomState$.value.players,
-          {
-            id,
-            isChannelConnected: false,
-            name,
-            state: PlayerState.NotReady
-          }
-        ]
-      });
-
-      return id;
-    },
-    setReady(playerId: string, isReady: boolean) {
-      throwIfNotStarted();
-      const player = roomState$.value.players.find(x => x.id === playerId);
-      if (!player) {
-        throw new Error(`Could not find player by id ${playerId}`);
-      }
-
-      const newState = isReady ? PlayerState.Ready : PlayerState.NotReady;
-
-      if (player.state === newState) {
-        throw new Error(`Player must be in ${PlayerState[newState]} state`);
-      }
-
-      roomState$.next({
-        ...roomState$.value,
-        players: roomState$.value.players.map(x =>
-          x.id === playerId ? { ...x, state: newState } : x
-        )
-      });
-    },
-    setConnected(playerId: string, value: boolean) {
-      roomState$.next({
-        ...roomState$.value,
-        players: roomState$.value.players.map(x =>
-          x.id === playerId ? { ...x, isChannelConnected: value } : x
-        )
-      });
-    },
-    start() {
-      if (roomState$.value.hostState === HostState.Started) {
-        throw new Error(`Host has already started`);
-      }
-      roomState$.next({
-        ...roomState$.value,
-        hostState: HostState.Started
-      });
-    }
-  };
-}
 
 const typeDefs = gql`
   type Query {
-    dummy: String
+    players: [Player!]!
   }
 
   type Player {
@@ -138,11 +32,21 @@ const typeDefs = gql`
   }
 
   type Subscription {
-    playersUpdated: [Player!]
+    players: [Player!]!
   }
 `;
 
 const roomState$ = new BehaviorSubject(RoomState.initial);
+interval(2200).subscribe((x) => {
+  roomState$.next({
+    ...roomState$.value,
+    players: [{ ...roomState$.value.players[0] }],
+  });
+});
+roomState$.subscribe(({ players }) => {
+  console.log("playersUpdated", players);
+  pubSub.publish("players", { players });
+});
 
 type CustomContext = { roomService: RoomService };
 
@@ -167,16 +71,37 @@ const auth = <TObj, TArgs, TContext extends { userId: string }, TResult>(
 
 const apolloServer = new ApolloServer({
   typeDefs,
-  context: ({ req }) => {
-    const token = req.headers.authorization;
+  context: ({ req, connection }) => {
+    const authToken =
+      req?.headers.authorization ?? connection?.context?.authToken;
 
     // try to retrieve a user with the token
-    const userId = token;
+    const userId = authToken;
 
     // add the user to the context
     return { userId, roomService: createRoomService(roomState$) };
   },
+  subscriptions: {
+    onConnect: ({ authToken }: { authToken?: string }) => {
+      if (authToken !== undefined) {
+        return {
+          authToken,
+        };
+      }
+
+      throw new Error("Missing auth token!");
+    },
+  },
   resolvers: {
+    Query: {
+      players: (
+        object: unknown,
+        { name }: { name: string },
+        context: CustomContext
+      ) => {
+        return context.roomService.getPlayers();
+      },
+    },
     Mutation: {
       login: (
         object: unknown,
@@ -192,18 +117,18 @@ const apolloServer = new ApolloServer({
       setConnected: auth((object, { value }, context: AuthCustomContext) => {
         context.roomService.setConnected(context.userId, value);
         return null;
-      })
+      }),
     },
     Subscription: {
-      playersUpdated: {
-        subscribe: () => pubSub.asyncIterator("playersUpdated")
-      }
-    }
+      players: {
+        subscribe: () => pubSub.asyncIterator("players"),
+      },
+    },
   } as any,
-  cors: true
+  cors: true,
 });
 
 apolloServer.listen(5000).then(({ url, subscriptionsUrl }) => {
   console.log(`🚀 Server ready at ${url}`);
   console.log(`🚀 Subscriptions ready at ${subscriptionsUrl}`);
-}); // TODO: make a setting
+});

@@ -6,11 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const v1_1 = __importDefault(require("uuid/v1"));
 const rxjs_1 = require("rxjs");
 const apollo_server_1 = require("apollo-server");
-var PlayerState;
-(function (PlayerState) {
-    PlayerState[PlayerState["NotReady"] = 0] = "NotReady";
-    PlayerState[PlayerState["Ready"] = 1] = "Ready";
-})(PlayerState = exports.PlayerState || (exports.PlayerState = {}));
 var HostState;
 (function (HostState) {
     HostState[HostState["NotStarted"] = 0] = "NotStarted";
@@ -33,6 +28,9 @@ function createRoomService(roomState$) {
         }
     };
     return {
+        getPlayers() {
+            return roomState$.value.players;
+        },
         login(name) {
             throwIfNotStarted();
             const player = roomState$.value.players.find(x => x.name === name);
@@ -46,7 +44,7 @@ function createRoomService(roomState$) {
                         id,
                         isChannelConnected: false,
                         name,
-                        state: PlayerState.NotReady
+                        isReady: false
                     }
                 ] }));
             return id;
@@ -57,11 +55,10 @@ function createRoomService(roomState$) {
             if (!player) {
                 throw new Error(`Could not find player by id ${playerId}`);
             }
-            const newState = isReady ? PlayerState.Ready : PlayerState.NotReady;
-            if (player.state === newState) {
-                throw new Error(`Player must be in ${PlayerState[newState]} state`);
+            if (player.isReady === isReady) {
+                throw new Error(`Player must be in isReady:${!isReady} state`);
             }
-            roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: roomState$.value.players.map(x => (x.id === playerId ? Object.assign(Object.assign({}, x), { state: newState }) : x)) }));
+            roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: roomState$.value.players.map(x => (x.id === playerId ? Object.assign(Object.assign({}, x), { isReady }) : x)) }));
         },
         setConnected(playerId, value) {
             roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: roomState$.value.players.map(x => (x.id === playerId ? Object.assign(Object.assign({}, x), { isChannelConnected: value }) : x)) }));
@@ -77,7 +74,7 @@ function createRoomService(roomState$) {
 exports.createRoomService = createRoomService;
 const typeDefs = apollo_server_1.gql `
   type Query {
-    dummy: String
+    players: [Player!]!
   }
 
   type Player {
@@ -94,10 +91,17 @@ const typeDefs = apollo_server_1.gql `
   }
 
   type Subscription {
-    playersUpdated: [Player!]
+    players: [Player!]!
   }
 `;
 const roomState$ = new rxjs_1.BehaviorSubject(exports.RoomState.initial);
+rxjs_1.interval(2200).subscribe(x => {
+    roomState$.next(Object.assign(Object.assign({}, roomState$.value), { players: [Object.assign({}, roomState$.value.players[0])] }));
+});
+roomState$.subscribe(({ players }) => {
+    console.log('playersUpdated', players);
+    pubSub.publish('players', { players });
+});
 const auth = (func) => {
     return (object, args, context) => {
         if (!context.userId) {
@@ -108,14 +112,30 @@ const auth = (func) => {
 };
 const apolloServer = new apollo_server_1.ApolloServer({
     typeDefs,
-    context: ({ req }) => {
-        const token = req.headers.authorization;
+    context: ({ req, connection }) => {
+        var _a, _b, _c, _d;
+        const authToken = (_b = (_a = req) === null || _a === void 0 ? void 0 : _a.headers.authorization, (_b !== null && _b !== void 0 ? _b : (_d = (_c = connection) === null || _c === void 0 ? void 0 : _c.context) === null || _d === void 0 ? void 0 : _d.authToken));
         // try to retrieve a user with the token
-        const userId = token;
+        const userId = authToken;
         // add the user to the context
         return { userId, roomService: createRoomService(roomState$) };
     },
+    subscriptions: {
+        onConnect: ({ authToken }) => {
+            if (authToken !== undefined) {
+                return {
+                    authToken,
+                };
+            }
+            throw new Error('Missing auth token!');
+        }
+    },
     resolvers: {
+        Query: {
+            players: (object, { name }, context) => {
+                return context.roomService.getPlayers();
+            }
+        },
         Mutation: {
             login: (object, { name }, context) => {
                 return context.roomService.login(name);
@@ -130,8 +150,8 @@ const apolloServer = new apollo_server_1.ApolloServer({
             })
         },
         Subscription: {
-            playersUpdated: {
-                subscribe: () => pubSub.asyncIterator("playersUpdated")
+            players: {
+                subscribe: () => pubSub.asyncIterator("players")
             }
         }
     },
@@ -140,4 +160,4 @@ const apolloServer = new apollo_server_1.ApolloServer({
 apolloServer.listen(5000).then(({ url, subscriptionsUrl }) => {
     console.log(`🚀 Server ready at ${url}`);
     console.log(`🚀 Subscriptions ready at ${subscriptionsUrl}`);
-}); // TODO: make a setting
+});
