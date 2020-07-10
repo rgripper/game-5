@@ -37,15 +37,10 @@ const typeDefs = gql`
 `;
 
 const roomState$ = new BehaviorSubject(RoomState.initial);
-interval(2200).subscribe((x) => {
-  roomState$.next({
-    ...roomState$.value,
-    players: [{ ...roomState$.value.players[0] }],
-  });
-});
-roomState$.subscribe(({ players }) => {
-  console.log("playersUpdated", players);
-  pubSub.publish("players", { players });
+
+roomState$.subscribe((state) => {
+  console.log("playersUpdated", state);
+  pubSub.publish("players", { players: state.players });
 });
 
 type CustomContext = { roomService: RoomService };
@@ -108,6 +103,7 @@ const apolloServer = new ApolloServer({
         { name }: { name: string },
         context: CustomContext
       ) => {
+        console.log("logging in");
         return context.roomService.login(name);
       },
       setReady: auth((object, { isReady }, context: AuthCustomContext) => {

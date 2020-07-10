@@ -58,9 +58,9 @@ function createLink(httpUrl: string, wsUrl: string, authToken: string) {
   );
 }
 
-function Login(props: {
-  onClientOptions: (options: ApolloClientOptions<any>) => void;
-}) {
+type LoginSuccessResult = { options: ApolloClientOptions<any>; userId: string };
+
+function Login(props: { onSuccess(params: LoginSuccessResult): void }) {
   const [serverUrl, setServerUrl] = useState("http://localhost:5000");
   const [name, setName] = useState("OrangeGore");
 
@@ -79,8 +79,9 @@ function Login(props: {
         onSubmitCapture={async (event) => {
           event.preventDefault();
           const result = await login({ variables: { name } });
-          const token = result.data.login;
-          props.onClientOptions({
+          const userId = result.data.login;
+          const token = userId;
+          const apolloClientOptions = {
             cache: new InMemoryCache({}),
             //headers: { authorization: token },
             link: createLink(
@@ -88,7 +89,8 @@ function Login(props: {
               "ws://localhost:5000/graphql",
               token
             ),
-          });
+          };
+          props.onSuccess({ options: apolloClientOptions, userId });
         }}
       >
         <fieldset disabled={loading}>

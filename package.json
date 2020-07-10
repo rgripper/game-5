@@ -17,9 +17,9 @@
     "lint-staged": "^9.4.2",
     "nodemon": "^2.0.2",
     "npm-run-all": "^4.1.5",
-    "prettier": "^1.18.2",
+    "prettier": "2.0.5",
     "ts-loader": "^6.2.0",
-    "typescript": "^3.7.4",
+    "typescript": "^4.0.0-beta",
     "webpack": "^4.41.1",
     "webpack-cli": "^3.3.9",
     "webpack-dev-server": "^3.8.2",
@@ -27,8 +27,8 @@
     "worker-plugin": "^3.2.0"
   },
   "dependencies": {
-    "client": "file:packages\\client",
-    "page-server": "file:packages\\page-server"
+    "client": "file:packages/client",
+    "page-server": "file:packages/page-server"
   },
   "workspaces": [
     "packages/client",

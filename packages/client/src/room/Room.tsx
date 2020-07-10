@@ -3,6 +3,7 @@ import { css } from "emotion";
 import gql from "graphql-tag";
 import { units, colors } from "../styles";
 import { useMutation, useSubscription, useQuery } from "@apollo/react-hooks";
+import { useAppContext } from "../AppContext";
 
 const container = css`
   height: 100%;
@@ -100,28 +101,32 @@ function Room() {
   const players: Player[] | undefined =
     subQuery.data?.players ?? initQuery.data?.players;
 
-  const currentPlayerId = "222";
+  const { userId } = useAppContext();
 
-  const isReady = false;
+  if (!players) {
+    return null;
+  }
+
+  const currentPlayer = players.find((x) => x.id === userId)!;
+
   return (
-    (players && (
-      <div className={container}>
-        <div className={playerList}>
-          {players.map((x) => (
-            <PlayerState key={x.id} {...x} />
-          ))}
-        </div>
-        <div>
-          <button
-            disabled={loading}
-            onClick={() => setReady({ variables: { isReady: !isReady } })}
-          >
-            {isReady ? "Unready" : "Ready"}
-          </button>
-        </div>
+    <div className={container}>
+      <div className={playerList}>
+        {players.map((x) => (
+          <PlayerState key={x.id} {...x} />
+        ))}
       </div>
-    )) ??
-    null
+      <div>
+        <button
+          disabled={loading}
+          onClick={() =>
+            setReady({ variables: { isReady: !currentPlayer.isReady } })
+          }
+        >
+          {currentPlayer.isReady ? "Unready" : "Ready"}
+        </button>
+      </div>
+    </div>
   );
 }
 

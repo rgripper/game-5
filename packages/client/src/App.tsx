@@ -4,9 +4,9 @@ import { Switch, Route, Router, Redirect } from "react-router";
 import { createBrowserHistory } from "history";
 import Login from "./room/Login";
 import Room from "./room/Room";
-import { WebSocketLink } from "apollo-link-ws";
 import { ApolloProvider } from "@apollo/react-hooks";
 import ApolloClient from "apollo-client";
+import { AppContext } from "./AppContext";
 
 const history = createBrowserHistory();
 
@@ -18,25 +18,31 @@ const history = createBrowserHistory();
 // });
 
 function App() {
-  const [client, setClient] = useState<ApolloClient<any> | null>(null);
-
-  if (!client) {
+  const [clientAndUserId, setClientAndUserId] = useState<{
+    client: ApolloClient<any>;
+    userId: string;
+  } | null>(null);
+  if (!clientAndUserId) {
     return (
       <Login
-        onClientOptions={(options) => setClient(new ApolloClient(options))}
+        onSuccess={({ options, userId }) =>
+          setClientAndUserId({ client: new ApolloClient(options), userId })
+        }
       />
     );
   }
 
   return (
-    <ApolloProvider client={client}>
-      <Router history={history}>
-        <Switch>
-          <Route path="/game" component={GameView} />
-          <Route path="/room" component={Room} />
-          <Redirect to="/room" />
-        </Switch>
-      </Router>
+    <ApolloProvider client={clientAndUserId.client}>
+      <AppContext.Provider value={{ userId: clientAndUserId.userId }}>
+        <Router history={history}>
+          <Switch>
+            <Route path="/game" component={GameView} />
+            <Route path="/room" component={Room} />
+            <Redirect to="/room" />
+          </Switch>
+        </Router>
+      </AppContext.Provider>
     </ApolloProvider>
   );
 }
