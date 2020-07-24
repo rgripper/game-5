@@ -1,48 +1,49 @@
 {
-  "name": "root",
-  "private": true,
-  "scripts": {
-    "start": "lerna run start --parallel"
-  },
-  "devDependencies": {
-    "@types/pixi.js": "^4.8.9",
-    "@types/react": "^16.9.6",
-    "@types/react-dom": "^16.9.2",
-    "@types/react-router-dom": "^5.1.3",
-    "clean-webpack-plugin": "^3.0.0",
-    "file-loader": "^4.2.0",
-    "html-webpack-plugin": "^3.2.0",
-    "husky": "^3.0.9",
-    "lerna": "^3.18.1",
-    "lint-staged": "^9.4.2",
-    "nodemon": "^2.0.2",
-    "npm-run-all": "^4.1.5",
-    "prettier": "2.0.5",
-    "ts-loader": "^6.2.0",
-    "typescript": "^4.0.0-beta",
-    "webpack": "^4.41.1",
-    "webpack-cli": "^3.3.9",
-    "webpack-dev-server": "^3.8.2",
-    "worker-loader": "^2.0.0",
-    "worker-plugin": "^3.2.0"
-  },
-  "dependencies": {
-    "client": "file:packages/client",
-    "page-server": "file:packages/page-server"
-  },
-  "workspaces": [
-    "packages/client",
-    "packages/server"
-  ],
-  "lint-staged": {
-    "*.{ts,tsx,json}": [
-      "prettier --write",
-      "git add"
-    ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
+    "name": "root",
+    "private": true,
+    "scripts": {
+        "start": "lerna run start --parallel"
+    },
+    "devDependencies": {
+        "@types/pixi.js": "^4.8.9",
+        "@types/react": "^16.9.6",
+        "@types/react-dom": "^16.9.2",
+        "@types/react-router-dom": "^5.1.3",
+        "clean-webpack-plugin": "^3.0.0",
+        "file-loader": "^4.2.0",
+        "html-webpack-plugin": "^3.2.0",
+        "husky": "^3.0.9",
+        "jest": "^26.1.0",
+        "lerna": "^3.18.1",
+        "lint-staged": "^9.4.2",
+        "nodemon": "^2.0.2",
+        "npm-run-all": "^4.1.5",
+        "prettier": "^2.0.5",
+        "ts-loader": "^6.2.0",
+        "typescript": "^3.9.7",
+        "webpack": "^4.41.1",
+        "webpack-cli": "^3.3.9",
+        "webpack-dev-server": "^3.8.2",
+        "worker-loader": "^2.0.0",
+        "worker-plugin": "^3.2.0"
+    },
+    "dependencies": {
+        "client": "file:packages/client",
+        "page-server": "file:packages/page-server"
+    },
+    "workspaces": [
+        "packages/client",
+        "packages/server"
+    ],
+    "lint-staged": {
+        "*.{ts,tsx,json}": [
+            "prettier --write",
+            "git add"
+        ]
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
     }
-  }
 }
