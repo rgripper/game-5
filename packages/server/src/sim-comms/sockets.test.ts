@@ -1,5 +1,7 @@
-import { waitForClients, AuthorizationPrefix } from './sockets';
+import { waitForClients, connectToServer, AuthorizationPrefix, AuthorizationSuccessful } from './sockets';
 import { EventEmitter } from 'events';
+import { fromEvent } from 'rxjs';
+import { first } from 'rxjs/operators';
 
 describe('server', () => {
     const createFakeServer = (serverEmitter: EventEmitter) => ({
@@ -11,16 +13,15 @@ describe('server', () => {
         },
         removeEventListener: serverEmitter.removeListener.bind(serverEmitter),
     });
-    const createFakeClient = (serverEmitter: EventEmitter) => {
+    const createFakeClient = () => {
         // TODO: make return type obey WebSocketLike
         const clientEmitter = new EventEmitter();
         const client = {
             emitter: clientEmitter,
             addEventListener: clientEmitter.addListener.bind(clientEmitter),
             removeEventListener: clientEmitter.removeListener.bind(clientEmitter),
-            send: jest.fn((data: string) => clientEmitter.emit('message', { data })), // TODO: add type field or remove completely?
+            send: jest.fn(),
         };
-        serverEmitter.emit('connection', client);
         return client;
     };
 
@@ -30,23 +31,50 @@ describe('server', () => {
 
     it('times out when socket count is not reached in time', () => {});
 
-    fit('returns all sockets when count is reached', async () => {
-        const serveEmitter = new EventEmitter();
-        const server = createFakeServer(serveEmitter);
+    it('returns all sockets when count is reached', async () => {
+        const serverEmitter = new EventEmitter();
+        const server = createFakeServer(serverEmitter);
         const waitForClientsPromise = waitForClients(server, x => x, 3, 1000).toPromise();
 
-        const client1 = createFakeClient(serveEmitter);
-        client1.send(AuthorizationPrefix + '111');
-        const client2 = createFakeClient(serveEmitter);
-        client2.send(AuthorizationPrefix + '222');
-        const client3 = createFakeClient(serveEmitter);
-        client3.send(AuthorizationPrefix + '333');
+        const client1 = createFakeClient();
+        serverEmitter.emit('connection', client1);
+        client1.emitter.emit('message', { data: AuthorizationPrefix + '111' });
+        const client2 = createFakeClient();
+        serverEmitter.emit('connection', client2);
+        client2.emitter.emit('message', { data: AuthorizationPrefix + '222' });
+        const client3 = createFakeClient();
+        serverEmitter.emit('connection', client3);
+        client3.emitter.emit('message', { data: AuthorizationPrefix + '333' });
 
         const clients = await waitForClientsPromise;
         expect(clients).toHaveLength(3);
+        expect(clients.map(x => x.id)).toEqual(['111', '222', '333']);
     });
 });
 
 describe('client', () => {
     it('times out if server did not respond time', () => {});
+
+    fit('connects and receives messages', async () => {
+        const clientEmitter = new EventEmitter();
+        const client = {
+            emitter: clientEmitter,
+            addEventListener: clientEmitter.addListener.bind(clientEmitter),
+            removeEventListener: clientEmitter.removeListener.bind(clientEmitter),
+            send: jest.fn(), // TODO: add type field or remove completely?
+        };
+
+        const messageHandler = jest.fn();
+        const authToken = 'authToken';
+        const authMessagePromise = fromEvent(client, 'message').pipe(first()).toPromise();
+        const connectionPromise = connectToServer(client, authToken, messageHandler, 1000, 1000).then();
+        client.emitter.emit('open');
+        //await authMessagePromise;
+        client.emitter.emit('message', { data: AuthorizationSuccessful });
+        //await expect(authMessagePromise).resolves.toBe(AuthorizationPrefix + authToken);
+        // client.emitter.emit('message', AuthorizationSuccessful);
+        // client.emitter.emit('message', 'blah');
+        await connectionPromise;
+        expect(messageHandler).toBeCalledWith('blah');
+    });
 });

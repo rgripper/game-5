@@ -10,7 +10,7 @@ type MessageEvent = {
 };
 
 export const AuthorizationPrefix = 'Authorization:';
-const AuthorizationSuccessful = 'AuthorizationSuccessful';
+export const AuthorizationSuccessful = 'AuthorizationSuccessful';
 
 function getAuthToken(message: MessageEvent) {
     return (
@@ -56,16 +56,27 @@ export async function connectToServer<T extends WebSocketLike>(
     socket: T,
     authToken: string,
     onMessage: (message: MessageEvent) => void,
+    openTimeout: number,
     authTimeout: number,
 ): Promise<() => void> {
+    console.log('waiting to open');
+    socket.addEventListener('message', x => console.log('some message received', x));
+    await fromEvent<MessageEvent>(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
+    console.log('sending auth token');
+    await fromEvent<MessageEvent>(socket, 'message').pipe(first(), timeout(openTimeout)).toPromise();
+    console.log('message received');
     socket.send(AuthorizationPrefix + authToken);
+    console.log('waiting for the message');
+
     await fromEvent<MessageEvent>(socket, 'message')
         .pipe(
+            tap(x => console.log('message has arrived', x)),
             first(x => x.data === AuthorizationSuccessful),
             tap(() => socket.addEventListener('message', onMessage)),
             timeout(authTimeout),
         )
         .toPromise();
+    console.log('received the message');
 
     return () => socket.removeEventListener('message', onMessage);
 }
