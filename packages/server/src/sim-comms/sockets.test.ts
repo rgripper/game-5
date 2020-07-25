@@ -1,7 +1,7 @@
 import { waitForClients, connectToServer, AuthorizationPrefix, AuthorizationSuccessful } from './sockets';
 import { EventEmitter } from 'events';
-import { fromEvent } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { ReplaySubject } from 'rxjs';
+import { MessageEvent } from 'ws';
 
 describe('server', () => {
     const createFakeServer = (serverEmitter: EventEmitter) => ({
@@ -25,11 +25,11 @@ describe('server', () => {
         return client;
     };
 
-    it('throws if socket is not authorized', async () => {});
+    xit('throws if socket is not authorized', async () => {});
 
-    it('times out if socket did not auth in time', () => {});
+    xit('times out if socket did not auth in time', () => {});
 
-    it('times out when socket count is not reached in time', () => {});
+    xit('times out when socket count is not reached in time', () => {});
 
     it('returns all sockets when count is reached', async () => {
         const serverEmitter = new EventEmitter();
@@ -53,9 +53,9 @@ describe('server', () => {
 });
 
 describe('client', () => {
-    it('times out if server did not respond time', () => {});
+    xit('times out if server did not respond time', () => {});
 
-    fit('connects and receives messages', async () => {
+    it('connects and receives messages', async () => {
         const clientEmitter = new EventEmitter();
         const client = {
             emitter: clientEmitter,
@@ -66,14 +66,15 @@ describe('client', () => {
 
         const messageHandler = jest.fn();
         const authToken = 'authToken';
-        const authMessagePromise = fromEvent(client, 'message').pipe(first()).toPromise();
+
         const connectionPromise = connectToServer(client, authToken, messageHandler, 1000, 1000).then();
         client.emitter.emit('open');
-        //await authMessagePromise;
+        await Promise.resolve();
+
+        expect(client.send).toBeCalledWith(AuthorizationPrefix + authToken);
+
         client.emitter.emit('message', { data: AuthorizationSuccessful });
-        //await expect(authMessagePromise).resolves.toBe(AuthorizationPrefix + authToken);
-        // client.emitter.emit('message', AuthorizationSuccessful);
-        // client.emitter.emit('message', 'blah');
+        client.emitter.emit('message', 'blah');
         await connectionPromise;
         expect(messageHandler).toBeCalledWith('blah');
     });

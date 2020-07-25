@@ -63,7 +63,6 @@ export async function connectToServer<T extends WebSocketLike>(
     socket.addEventListener('message', x => console.log('some message received', x));
     await fromEvent<MessageEvent>(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
     console.log('sending auth token');
-    await fromEvent<MessageEvent>(socket, 'message').pipe(first(), timeout(openTimeout)).toPromise();
     console.log('message received');
     socket.send(AuthorizationPrefix + authToken);
     console.log('waiting for the message');
