@@ -28,7 +28,7 @@ describe('server', () => {
     it('returns all sockets when count is reached', async () => {
         const serverEmitter = new EventEmitter();
         const server = createFakeServer(serverEmitter);
-        const waitForClientsPromise = waitForClients(server as any, x => x, 3, 1000, 1000).toPromise();
+        const waitForClientsPromise = waitForClients(server, x => x, 3, 1000, 1000).toPromise();
 
         const client1 = createFakeClient();
         serverEmitter.emit('connection', client1);
@@ -85,13 +85,13 @@ describe('real sockets', () => {
             send: client.send.bind(client),
         };
 
-        const waitForClientsPromise = waitForClients(server as any, x => x, 1, 1000, 1000)
+        const waitForClientsPromise = waitForClients(server, x => x, 1, 1000, 1000)
             .toPromise()
             .then();
 
         const authToken = 'authToken';
         const messageHandler = jest.fn();
-        const connectionPromise = connectToServer(clientWrapper as any, authToken, messageHandler, 1000, 1000).then();
+        const connectionPromise = connectToServer(clientWrapper, authToken, messageHandler, 1000, 1000).then();
 
         const [clients] = await Promise.all([waitForClientsPromise, connectionPromise]);
         expect(clients).toHaveLength(1);

@@ -1,7 +1,6 @@
-import { Observable, fromEvent, BehaviorSubject, ReplaySubject } from 'rxjs';
-import { map, scan, mergeMap, first, timeout, tap, buffer, bufferCount } from 'rxjs/operators';
+import { Observable, fromEvent, ReplaySubject } from 'rxjs';
+import { map, scan, mergeMap, first, timeout, tap } from 'rxjs/operators';
 import { HasEventTargetAddRemove, NodeCompatibleEventEmitter } from 'rxjs/internal/observable/fromEvent';
-import WebSocket from 'ws';
 
 type Data = string | Buffer | ArrayBuffer | Buffer[];
 
@@ -28,8 +27,8 @@ function isNonEmptyString(value: string | null): value is string {
 
 type SocketAndId<T> = { socket: T; id: string };
 
-export type WebSocketLike = HasEventTargetAddRemove<MessageEvent> & { send: (data: Data) => void };
-export type ServerLike = NodeCompatibleEventEmitter;
+export type WebSocketLike = HasEventTargetAddRemove<any> & { send: (data: Data) => void };
+export type ServerLike = NodeCompatibleEventEmitter | HasEventTargetAddRemove<any>;
 /**
  * Completes when all sockets have been returned.
  */
@@ -72,7 +71,7 @@ export async function connectToServer<T extends WebSocketLike>(
         )
         .subscribe(authMessageEvent$);
 
-    await fromEvent<MessageEvent>(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
+    await fromEvent(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
 
     socket.send(AuthorizationPrefix + authToken);
     await authMessageEvent$.toPromise();
