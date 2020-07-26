@@ -1,5 +1,5 @@
 import { Observable, fromEvent, BehaviorSubject, ReplaySubject } from 'rxjs';
-import { map, scan, mergeMap, first, timeout, tap } from 'rxjs/operators';
+import { map, scan, mergeMap, first, timeout, tap, buffer, bufferCount } from 'rxjs/operators';
 import { HasEventTargetAddRemove, NodeCompatibleEventEmitter } from 'rxjs/internal/observable/fromEvent';
 import WebSocket from 'ws';
 
@@ -38,11 +38,11 @@ export function waitForClients<TClient extends WebSocketLike, TServer extends Se
     getClientIdByToken: (authToken: string) => string,
     expectedClientCount: number,
     authTimeout: number,
+    waitForClientsTimeout: number,
 ): Observable<SocketAndId<TClient>[]> {
     return fromEvent<TClient | [TClient]>(server, 'connection').pipe(
         mergeMap(async args => {
             const socket = Array.isArray(args) ? args[0] : args;
-            console.log('server received a connection');
             const id = await fromEvent<MessageEvent>(socket, 'message')
                 .pipe(map(getAuthToken), first(isNonEmptyString), timeout(authTimeout), map(getClientIdByToken))
                 .toPromise();
@@ -52,6 +52,7 @@ export function waitForClients<TClient extends WebSocketLike, TServer extends Se
         tap(socketAndId => socketAndId.socket.send(AuthorizationSuccessful)),
         scan((acc, socketAndId) => acc.concat(socketAndId), [] as SocketAndId<TClient>[]),
         first(socketsAndIds => socketsAndIds.length === expectedClientCount),
+        timeout(waitForClientsTimeout),
     );
 }
 
@@ -62,23 +63,19 @@ export async function connectToServer<T extends WebSocketLike>(
     openTimeout: number,
     authTimeout: number,
 ): Promise<() => void> {
-    const messageEvents$ = new ReplaySubject<MessageEvent>();
-
+    const authMessageEvent$ = new ReplaySubject<MessageEvent>();
     fromEvent<MessageEvent>(socket, 'message')
         .pipe(
             first(x => x.data === AuthorizationSuccessful),
             tap(() => socket.addEventListener('message', onMessage)),
             timeout(authTimeout),
         )
-        .subscribe(messageEvents$);
-
-    console.log('waiting to open', ((socket as any) as WebSocket).readyState);
+        .subscribe(authMessageEvent$);
 
     await fromEvent<MessageEvent>(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
 
     socket.send(AuthorizationPrefix + authToken);
-    console.log('client sent' + AuthorizationPrefix + authToken);
-    await messageEvents$.toPromise();
+    await authMessageEvent$.toPromise();
     return () => socket.removeEventListener('message', onMessage);
 }
 

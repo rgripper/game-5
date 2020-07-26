@@ -25,10 +25,10 @@ describe('server', () => {
 
     xit('times out when socket count is not reached in time', () => {});
 
-    xit('returns all sockets when count is reached', async () => {
+    it('returns all sockets when count is reached', async () => {
         const serverEmitter = new EventEmitter();
         const server = createFakeServer(serverEmitter);
-        const waitForClientsPromise = waitForClients(server as any, x => x, 3, 1000).toPromise();
+        const waitForClientsPromise = waitForClients(server as any, x => x, 3, 1000, 1000).toPromise();
 
         const client1 = createFakeClient();
         serverEmitter.emit('connection', client1);
@@ -49,7 +49,7 @@ describe('server', () => {
 describe('client', () => {
     xit('times out if server did not respond time', () => {});
 
-    xit('connects and receives messages', async () => {
+    it('connects and receives messages', async () => {
         const clientEmitter = new EventEmitter();
         const client = {
             emitter: clientEmitter,
@@ -75,37 +75,35 @@ describe('client', () => {
 });
 
 describe('real sockets', () => {
-    fit('connects and receives messages', async () => {
+    it('connects and receives messages', async done => {
         const client = new WebSocket('http://localhost:3888');
         const server = new WebSocket.Server({ port: 3888 });
 
         const clientWrapper = {
-            addEventListener: client.addListener.bind(client),
-            removeEventListener: client.removeListener.bind(client),
+            addEventListener: client.addEventListener.bind(client),
+            removeEventListener: client.addEventListener.bind(client),
             send: client.send.bind(client),
         };
 
-        try {
-            const waitForClientsPromise = waitForClients(server as any, x => x, 3, 1000)
-                .toPromise()
-                .then();
+        const waitForClientsPromise = waitForClients(server as any, x => x, 1, 1000, 1000)
+            .toPromise()
+            .then();
 
-            const authToken = 'authToken';
-            const messageHandler = jest.fn();
-            const connectionPromise = connectToServer(clientWrapper, authToken, messageHandler, 1000, 1000).then();
-            console.log('waiting for connection');
+        const authToken = 'authToken';
+        const messageHandler = jest.fn();
+        const connectionPromise = connectToServer(clientWrapper as any, authToken, messageHandler, 1000, 1000).then();
 
-            await connectionPromise;
+        const [clients] = await Promise.all([waitForClientsPromise, connectionPromise]);
+        expect(clients).toHaveLength(1);
 
-            const clients = await waitForClientsPromise;
-            expect(clients).toHaveLength(1);
+        clients[0].socket.send('blah');
 
-            client.send('blah');
-            await Promise.resolve();
-            expect(messageHandler).toBeCalledWith('blah');
-        } finally {
+        await Promise.resolve();
+        setTimeout(() => {
             client.close();
             server.close();
-        }
+            expect(messageHandler.mock.calls[0][0].data).toBe('blah');
+            done();
+        }, 100);
     });
 });
