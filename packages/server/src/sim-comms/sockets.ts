@@ -1,6 +1,7 @@
-import { Observable, fromEvent } from 'rxjs';
+import { Observable, fromEvent, BehaviorSubject, ReplaySubject } from 'rxjs';
 import { map, scan, mergeMap, first, timeout, tap } from 'rxjs/operators';
-import { HasEventTargetAddRemove } from 'rxjs/internal/observable/fromEvent';
+import { HasEventTargetAddRemove, NodeCompatibleEventEmitter } from 'rxjs/internal/observable/fromEvent';
+import WebSocket from 'ws';
 
 type Data = string | Buffer | ArrayBuffer | Buffer[];
 
@@ -28,18 +29,20 @@ function isNonEmptyString(value: string | null): value is string {
 type SocketAndId<T> = { socket: T; id: string };
 
 export type WebSocketLike = HasEventTargetAddRemove<MessageEvent> & { send: (data: Data) => void };
-export type ServerLike<T> = HasEventTargetAddRemove<T>;
+export type ServerLike = NodeCompatibleEventEmitter;
 /**
  * Completes when all sockets have been returned.
  */
-export function waitForClients<TClient extends WebSocketLike, TServer extends ServerLike<TClient>>(
+export function waitForClients<TClient extends WebSocketLike, TServer extends ServerLike>(
     server: TServer,
     getClientIdByToken: (authToken: string) => string,
     expectedClientCount: number,
     authTimeout: number,
 ): Observable<SocketAndId<TClient>[]> {
-    return fromEvent<TClient>(server, 'connection').pipe(
-        mergeMap(async socket => {
+    return fromEvent<TClient | [TClient]>(server, 'connection').pipe(
+        mergeMap(async args => {
+            const socket = Array.isArray(args) ? args[0] : args;
+            console.log('server received a connection');
             const id = await fromEvent<MessageEvent>(socket, 'message')
                 .pipe(map(getAuthToken), first(isNonEmptyString), timeout(authTimeout), map(getClientIdByToken))
                 .toPromise();
@@ -59,24 +62,23 @@ export async function connectToServer<T extends WebSocketLike>(
     openTimeout: number,
     authTimeout: number,
 ): Promise<() => void> {
-    console.log('waiting to open');
-    socket.addEventListener('message', x => console.log('some message received', x));
-    await fromEvent<MessageEvent>(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
-    console.log('sending auth token');
-    console.log('message received');
-    socket.send(AuthorizationPrefix + authToken);
-    console.log('waiting for the message');
+    const messageEvents$ = new ReplaySubject<MessageEvent>();
 
-    await fromEvent<MessageEvent>(socket, 'message')
+    fromEvent<MessageEvent>(socket, 'message')
         .pipe(
-            tap(x => console.log('message has arrived', x)),
             first(x => x.data === AuthorizationSuccessful),
             tap(() => socket.addEventListener('message', onMessage)),
             timeout(authTimeout),
         )
-        .toPromise();
-    console.log('received the message');
+        .subscribe(messageEvents$);
 
+    console.log('waiting to open', ((socket as any) as WebSocket).readyState);
+
+    await fromEvent<MessageEvent>(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
+
+    socket.send(AuthorizationPrefix + authToken);
+    console.log('client sent' + AuthorizationPrefix + authToken);
+    await messageEvents$.toPromise();
     return () => socket.removeEventListener('message', onMessage);
 }
 

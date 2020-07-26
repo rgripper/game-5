@@ -1,16 +1,10 @@
 import { waitForClients, connectToServer, AuthorizationPrefix, AuthorizationSuccessful } from './sockets';
 import { EventEmitter } from 'events';
-import { ReplaySubject } from 'rxjs';
-import { MessageEvent } from 'ws';
+import WebSocket from 'ws';
 
 describe('server', () => {
     const createFakeServer = (serverEmitter: EventEmitter) => ({
-        addEventListener: (name: any, listener: any) => {
-            serverEmitter.addListener.bind(serverEmitter)(name, (...args) => {
-                //console.log('server', name, args);
-                listener(...args);
-            });
-        },
+        addEventListener: serverEmitter.addListener.bind(serverEmitter),
         removeEventListener: serverEmitter.removeListener.bind(serverEmitter),
     });
     const createFakeClient = () => {
@@ -31,10 +25,10 @@ describe('server', () => {
 
     xit('times out when socket count is not reached in time', () => {});
 
-    it('returns all sockets when count is reached', async () => {
+    xit('returns all sockets when count is reached', async () => {
         const serverEmitter = new EventEmitter();
         const server = createFakeServer(serverEmitter);
-        const waitForClientsPromise = waitForClients(server, x => x, 3, 1000).toPromise();
+        const waitForClientsPromise = waitForClients(server as any, x => x, 3, 1000).toPromise();
 
         const client1 = createFakeClient();
         serverEmitter.emit('connection', client1);
@@ -55,13 +49,13 @@ describe('server', () => {
 describe('client', () => {
     xit('times out if server did not respond time', () => {});
 
-    it('connects and receives messages', async () => {
+    xit('connects and receives messages', async () => {
         const clientEmitter = new EventEmitter();
         const client = {
             emitter: clientEmitter,
             addEventListener: clientEmitter.addListener.bind(clientEmitter),
             removeEventListener: clientEmitter.removeListener.bind(clientEmitter),
-            send: jest.fn(), // TODO: add type field or remove completely?
+            send: jest.fn(),
         };
 
         const messageHandler = jest.fn();
@@ -70,12 +64,48 @@ describe('client', () => {
         const connectionPromise = connectToServer(client, authToken, messageHandler, 1000, 1000).then();
         client.emitter.emit('open');
         await Promise.resolve();
-
         expect(client.send).toBeCalledWith(AuthorizationPrefix + authToken);
 
         client.emitter.emit('message', { data: AuthorizationSuccessful });
         client.emitter.emit('message', 'blah');
+
         await connectionPromise;
         expect(messageHandler).toBeCalledWith('blah');
+    });
+});
+
+describe('real sockets', () => {
+    fit('connects and receives messages', async () => {
+        const client = new WebSocket('http://localhost:3888');
+        const server = new WebSocket.Server({ port: 3888 });
+
+        const clientWrapper = {
+            addEventListener: client.addListener.bind(client),
+            removeEventListener: client.removeListener.bind(client),
+            send: client.send.bind(client),
+        };
+
+        try {
+            const waitForClientsPromise = waitForClients(server as any, x => x, 3, 1000)
+                .toPromise()
+                .then();
+
+            const authToken = 'authToken';
+            const messageHandler = jest.fn();
+            const connectionPromise = connectToServer(clientWrapper, authToken, messageHandler, 1000, 1000).then();
+            console.log('waiting for connection');
+
+            await connectionPromise;
+
+            const clients = await waitForClientsPromise;
+            expect(clients).toHaveLength(1);
+
+            client.send('blah');
+            await Promise.resolve();
+            expect(messageHandler).toBeCalledWith('blah');
+        } finally {
+            client.close();
+            server.close();
+        }
     });
 });

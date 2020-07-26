@@ -5,7 +5,7 @@
     "license": "MIT",
     "scripts": {
         "jest": "jest",
-        "test": "jest src --watch",
+        "test": "jest src --watch --color",
         "tsc": "tsc",
         "compile-watch": "tsc -w",
         "dist-watch": "nodemon dist/index.js",
