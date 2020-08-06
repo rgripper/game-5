@@ -1,6 +1,7 @@
-import { Observable, fromEvent, ReplaySubject } from 'rxjs';
-import { map, scan, mergeMap, first, timeout, tap } from 'rxjs/operators';
-import { HasEventTargetAddRemove, NodeCompatibleEventEmitter } from 'rxjs/internal/observable/fromEvent';
+import { Observable, fromEvent, firstValueFrom, BehaviorSubject, throwError, from } from 'rxjs';
+import { map, scan, mergeMap, first, timeout, tap, timeoutWith } from 'rxjs/operators';
+import { HasEventTargetAddRemove, NodeCompatibleEventEmitter } from 'rxjs/dist/types/internal/observable/fromEvent';
+import WebSocket from 'ws';
 
 type Data = string | Buffer | ArrayBuffer | Buffer[];
 
@@ -42,9 +43,14 @@ export function waitForClients<TClient extends WebSocketLike, TServer extends Se
     return fromEvent<TClient | [TClient]>(server, 'connection').pipe(
         mergeMap(async args => {
             const socket = Array.isArray(args) ? args[0] : args;
-            const id = await fromEvent<MessageEvent>(socket, 'message')
-                .pipe(map(getAuthToken), first(isNonEmptyString), timeout(authTimeout), map(getClientIdByToken))
-                .toPromise();
+            const id = await firstValueFrom(
+                fromEvent<MessageEvent>(socket, 'message').pipe(
+                    map(getAuthToken),
+                    first(isNonEmptyString),
+                    timeout(authTimeout),
+                    map(getClientIdByToken),
+                ),
+            );
 
             return { socket, id };
         }),
@@ -55,26 +61,32 @@ export function waitForClients<TClient extends WebSocketLike, TServer extends Se
     );
 }
 
-export async function connectToServer<T extends WebSocketLike>(
-    socket: T,
+export async function connectToServer(
+    socket: HasEventTargetAddRemove<any> & { isOpen(): boolean; send: (data: string) => void },
     authToken: string,
     onMessage: (message: MessageEvent) => void,
-    openTimeout: number,
-    authTimeout: number,
 ): Promise<() => void> {
-    const authMessageEvent$ = new ReplaySubject<MessageEvent>();
-    fromEvent<MessageEvent>(socket, 'message')
-        .pipe(
-            first(x => x.data === AuthorizationSuccessful),
-            tap(() => socket.addEventListener('message', onMessage)),
-            timeout(authTimeout),
-        )
-        .subscribe(authMessageEvent$);
+    await firstValueFrom(
+        (socket.isOpen() ? from([true]) : fromEvent(socket, 'open')).pipe(
+            timeoutWith(1000, throwError(new Error('Timed out waiting for socket to open'))),
+            tap<WebSocket>(() => socket.send(AuthorizationPrefix + authToken)),
+            mergeMap(() =>
+                fromEvent<MessageEvent>(socket, 'message').pipe(
+                    first(),
+                    timeoutWith(1000, throwError(new Error('Timed out waiting for an authorization message'))),
+                    tap(message => {
+                        if (message.data !== AuthorizationSuccessful) {
+                            throw new Error(
+                                'Expected message data to by AuthorizationSuccessful but was something else',
+                            );
+                        }
+                    }),
+                    tap(() => socket.addEventListener('message', onMessage)),
+                ),
+            ),
+        ),
+    );
 
-    await fromEvent(socket, 'open').pipe(first(), timeout(openTimeout)).toPromise();
-
-    socket.send(AuthorizationPrefix + authToken);
-    await authMessageEvent$.toPromise();
     return () => socket.removeEventListener('message', onMessage);
 }
 

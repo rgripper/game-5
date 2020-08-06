@@ -1,6 +1,7 @@
 import { waitForClients, connectToServer, AuthorizationPrefix, AuthorizationSuccessful } from './sockets';
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
+import { lastValueFrom } from 'rxjs';
 
 describe('server', () => {
     const createFakeServer = (serverEmitter: EventEmitter) => ({
@@ -28,7 +29,7 @@ describe('server', () => {
     it('returns all sockets when count is reached', async () => {
         const serverEmitter = new EventEmitter();
         const server = createFakeServer(serverEmitter);
-        const waitForClientsPromise = waitForClients(server, x => x, 3, 1000, 1000).toPromise();
+        const waitForClientsPromise = lastValueFrom(waitForClients(server, x => x, 3, 1000, 1000));
 
         const client1 = createFakeClient();
         serverEmitter.emit('connection', client1);
@@ -56,20 +57,23 @@ describe('client', () => {
             addEventListener: clientEmitter.addListener.bind(clientEmitter),
             removeEventListener: clientEmitter.removeListener.bind(clientEmitter),
             send: jest.fn(),
+            isOpen: () => false,
         };
 
         const messageHandler = jest.fn();
         const authToken = 'authToken';
 
-        const connectionPromise = connectToServer(client, authToken, messageHandler, 1000, 1000).then();
+        const connectionPromise = connectToServer(client, authToken, messageHandler).then();
         client.emitter.emit('open');
-        await Promise.resolve();
-        expect(client.send).toBeCalledWith(AuthorizationPrefix + authToken);
-
         client.emitter.emit('message', { data: AuthorizationSuccessful });
-        client.emitter.emit('message', 'blah');
+
+        client.emitter.emit('message', 'blah'); // TODO: should it allowed to send other messages straight after auth success?
 
         await connectionPromise;
+
+        expect(client.send).toBeCalledWith(AuthorizationPrefix + authToken);
+
+        await Promise.resolve();
         expect(messageHandler).toBeCalledWith('blah');
     });
 });
@@ -83,15 +87,14 @@ describe('real sockets', () => {
             addEventListener: client.addEventListener.bind(client),
             removeEventListener: client.addEventListener.bind(client),
             send: client.send.bind(client),
+            isOpen: () => client.readyState === client.OPEN,
         };
 
-        const waitForClientsPromise = waitForClients(server, x => x, 1, 1000, 1000)
-            .toPromise()
-            .then();
+        const waitForClientsPromise = lastValueFrom(waitForClients(server, x => x, 1, 1000, 1000)).then();
 
         const authToken = 'authToken';
         const messageHandler = jest.fn();
-        const connectionPromise = connectToServer(clientWrapper, authToken, messageHandler, 1000, 1000).then();
+        const connectionPromise = connectToServer(clientWrapper as any, authToken, messageHandler).then();
 
         const [clients] = await Promise.all([waitForClientsPromise, connectionPromise]);
         expect(clients).toHaveLength(1);

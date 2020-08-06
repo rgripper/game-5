@@ -23,7 +23,7 @@
         "react": "^16.10.2",
         "react-dom": "^16.10.2",
         "react-router": "^5.1.2",
-        "rxjs": "^6.5.3",
+        "rxjs": "7.0.0-beta.4",
         "subscriptions-transport-ws": "^0.9.16"
     },
     "devDependencies": {
