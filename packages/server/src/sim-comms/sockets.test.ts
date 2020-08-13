@@ -4,28 +4,30 @@ import {
     AuthorizationPrefix,
     AuthorizationSuccessful,
     ReadyForFrames,
+    createSimpleServer,
 } from './sockets';
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import { lastValueFrom } from 'rxjs';
 
-describe('server', () => {
-    const createFakeServer = (serverEmitter: EventEmitter) => ({
-        addEventListener: serverEmitter.addListener.bind(serverEmitter),
-        removeEventListener: serverEmitter.removeListener.bind(serverEmitter),
-    });
-    const createFakeClient = () => {
-        // TODO: make return type obey WebSocketLike
-        const clientEmitter = new EventEmitter();
-        const client = {
-            emitter: clientEmitter,
-            addEventListener: clientEmitter.addListener.bind(clientEmitter),
-            removeEventListener: clientEmitter.removeListener.bind(clientEmitter),
-            send: jest.fn(),
-        };
-        return client;
+const createFakeServer = (serverEmitter: EventEmitter) => ({
+    addEventListener: serverEmitter.addListener.bind(serverEmitter),
+    removeEventListener: serverEmitter.removeListener.bind(serverEmitter),
+});
+const createFakeClient = () => {
+    // TODO: make return type obey WebSocketLike
+    const clientEmitter = new EventEmitter();
+    const client = {
+        emitter: clientEmitter,
+        addEventListener: clientEmitter.addListener.bind(clientEmitter),
+        removeEventListener: clientEmitter.removeListener.bind(clientEmitter),
+        isOpen: () => true,
+        send: jest.fn(),
     };
+    return client;
+};
 
+describe('server', () => {
     xit('throws if socket is not authorized', async () => {});
 
     xit('times out if socket did not auth in time', () => {});
@@ -89,6 +91,32 @@ describe('client', () => {
         expect(client.send).toBeCalledWith(AuthorizationPrefix + authToken);
 
         expect(messageHandler).toBeCalledWith(message.data);
+    });
+});
+
+describe(createSimpleServer, () => {
+    it('receives commands and broadcasts frames', async () => {
+        const clients = [
+            { id: '1', socket: createFakeClient() },
+            { id: '2', socket: createFakeClient() },
+        ];
+
+        const simpleServer = createSimpleServer<string, { value: number }>(clients);
+
+        const receivedCommands: string[] = [];
+        simpleServer.commands.subscribe(c => receivedCommands.push(c));
+
+        simpleServer.sendFrame({ value: 44 });
+        await Promise.resolve();
+
+        expect(clients[0].socket.send).toBeCalledWith('{"value":44}');
+        expect(clients[1].socket.send).toBeCalledWith('{"value":44}');
+
+        clients[1].socket.emitter.emit('message', { data: 20 });
+        clients[0].socket.emitter.emit('message', { data: 10 });
+        await Promise.resolve();
+
+        expect(receivedCommands).toEqual([20, 10]);
     });
 });
 

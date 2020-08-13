@@ -1,4 +1,4 @@
-import { Observable, fromEvent, firstValueFrom, BehaviorSubject, throwError, from } from 'rxjs';
+import { Observable, fromEvent, firstValueFrom, throwError, from, merge, lastValueFrom } from 'rxjs';
 import { map, scan, mergeMap, first, timeout, tap, timeoutWith } from 'rxjs/operators';
 import { HasEventTargetAddRemove, NodeCompatibleEventEmitter } from 'rxjs/dist/types/internal/observable/fromEvent';
 import WebSocket from 'ws';
@@ -7,6 +7,11 @@ export type SimpleClient<TCommand, TFrame> = {
     frames: Observable<TFrame>;
     sendCommand(command: TCommand): void;
     ready: () => void;
+};
+
+export type SimpleServer<TCommand, TFrame> = {
+    commands: Observable<TCommand>;
+    sendFrame(frame: TFrame): void;
 };
 
 type Data = string | Buffer | ArrayBuffer | Buffer[];
@@ -29,11 +34,7 @@ function getAuthToken(message: MessageEvent) {
     );
 }
 
-function isNonEmptyString(value: string | null): value is string {
-    return !!value;
-}
-
-type SocketAndId<T> = { socket: T; id: string };
+type SocketAndId<T extends WebSocketLike> = { socket: T; id: string };
 
 enum SocketNegotiationState {
     Unauth,
@@ -44,6 +45,21 @@ type SocketNegotiation = { state: SocketNegotiationState; id: null | string };
 
 export type WebSocketLike = HasEventTargetAddRemove<any> & { send: (data: Data) => void; isOpen(): boolean };
 export type ServerLike = NodeCompatibleEventEmitter | HasEventTargetAddRemove<any>;
+
+// const clients = await lastValueFrom(waitForClients(server, x => x, clientCount, 200, 5000));
+
+export function createSimpleServer<TCommand, TFrame>(
+    clients: SocketAndId<WebSocketLike>[],
+): SimpleServer<TCommand, TFrame> {
+    const commands = merge(
+        ...clients.map(x => fromEvent<MessageEvent>(x.socket, 'message').pipe(map(x => JSON.parse(x.data as string)))),
+    );
+    const sendFrame = (frame: TFrame) => clients.forEach(x => x.socket.send(JSON.stringify(frame)));
+    return {
+        commands,
+        sendFrame,
+    };
+}
 
 /**
  * Completes when all sockets have been returned.
