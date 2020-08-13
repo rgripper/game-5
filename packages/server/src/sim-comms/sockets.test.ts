@@ -1,4 +1,10 @@
-import { waitForClients, connectToServer, AuthorizationPrefix, AuthorizationSuccessful } from './sockets';
+import {
+    waitForClients,
+    connectToServer,
+    AuthorizationPrefix,
+    AuthorizationSuccessful,
+    ReadyForFrames,
+} from './sockets';
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import { lastValueFrom } from 'rxjs';
@@ -34,12 +40,15 @@ describe('server', () => {
         const client1 = createFakeClient();
         serverEmitter.emit('connection', client1);
         client1.emitter.emit('message', { data: AuthorizationPrefix + '111' });
+        client1.emitter.emit('message', { data: ReadyForFrames });
         const client2 = createFakeClient();
         serverEmitter.emit('connection', client2);
         client2.emitter.emit('message', { data: AuthorizationPrefix + '222' });
+        client2.emitter.emit('message', { data: ReadyForFrames });
         const client3 = createFakeClient();
         serverEmitter.emit('connection', client3);
         client3.emitter.emit('message', { data: AuthorizationPrefix + '333' });
+        client3.emitter.emit('message', { data: ReadyForFrames });
 
         const clients = await waitForClientsPromise;
         expect(clients).toHaveLength(3);
@@ -63,18 +72,23 @@ describe('client', () => {
         const messageHandler = jest.fn();
         const authToken = 'authToken';
 
-        const connectionPromise = connectToServer(client, authToken, messageHandler).then();
+        const simpleClientPromise = connectToServer(client, authToken);
         client.emitter.emit('open');
         client.emitter.emit('message', { data: AuthorizationSuccessful });
 
-        client.emitter.emit('message', 'blah'); // TODO: should it allowed to send other messages straight after auth success?
+        const simpleClient = await simpleClientPromise;
+        simpleClient.frames.subscribe(messageHandler);
+        simpleClient.ready();
 
-        await connectionPromise;
+        await Promise.resolve();
+        const message = { data: 5 };
+
+        client.emitter.emit('message', message); // TODO: should it allowed to send other messages straight after auth success?
+        await Promise.resolve();
 
         expect(client.send).toBeCalledWith(AuthorizationPrefix + authToken);
 
-        await Promise.resolve();
-        expect(messageHandler).toBeCalledWith('blah');
+        expect(messageHandler).toBeCalledWith(message.data);
     });
 });
 
@@ -85,7 +99,7 @@ describe('real sockets', () => {
 
         const clientWrapper = {
             addEventListener: client.addEventListener.bind(client),
-            removeEventListener: client.addEventListener.bind(client),
+            removeEventListener: client.removeEventListener.bind(client),
             send: client.send.bind(client),
             isOpen: () => client.readyState === client.OPEN,
         };
@@ -94,19 +108,23 @@ describe('real sockets', () => {
 
         const authToken = 'authToken';
         const messageHandler = jest.fn();
-        const connectionPromise = connectToServer(clientWrapper as any, authToken, messageHandler).then();
+        const simpleClient = await connectToServer(clientWrapper as any, authToken);
+        simpleClient.frames.subscribe(messageHandler);
+        simpleClient.ready();
 
-        const [clients] = await Promise.all([waitForClientsPromise, connectionPromise]);
+        const clients = await waitForClientsPromise;
         expect(clients).toHaveLength(1);
 
-        clients[0].socket.send('blah');
+        const message = { data: 5 };
+
+        clients[0].socket.send(JSON.stringify(message));
 
         await Promise.resolve();
         setTimeout(() => {
             client.close();
             server.close();
-            expect(messageHandler.mock.calls[0][0].data).toBe('blah');
+            expect(messageHandler.mock.calls[0][0].data).toBe(message.data);
             done();
-        }, 100);
+        }, 1000);
     });
 });

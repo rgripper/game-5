@@ -3,6 +3,12 @@ import { map, scan, mergeMap, first, timeout, tap, timeoutWith } from 'rxjs/oper
 import { HasEventTargetAddRemove, NodeCompatibleEventEmitter } from 'rxjs/dist/types/internal/observable/fromEvent';
 import WebSocket from 'ws';
 
+export type SimpleClient<TCommand, TFrame> = {
+    frames: Observable<TFrame>;
+    sendCommand(command: TCommand): void;
+    ready: () => void;
+};
+
 type Data = string | Buffer | ArrayBuffer | Buffer[];
 
 type MessageEvent = {
@@ -10,6 +16,7 @@ type MessageEvent = {
     type: string;
 };
 
+export const ReadyForFrames = 'ReadyForFrames';
 export const AuthorizationPrefix = 'Authorization:';
 export const AuthorizationSuccessful = 'AuthorizationSuccessful';
 
@@ -28,8 +35,16 @@ function isNonEmptyString(value: string | null): value is string {
 
 type SocketAndId<T> = { socket: T; id: string };
 
-export type WebSocketLike = HasEventTargetAddRemove<any> & { send: (data: Data) => void };
+enum SocketNegotiationState {
+    Unauth,
+    AuthAndNotReady,
+    AuthAndReady,
+}
+type SocketNegotiation = { state: SocketNegotiationState; id: null | string };
+
+export type WebSocketLike = HasEventTargetAddRemove<any> & { send: (data: Data) => void; isOpen(): boolean };
 export type ServerLike = NodeCompatibleEventEmitter | HasEventTargetAddRemove<any>;
+
 /**
  * Completes when all sockets have been returned.
  */
@@ -45,28 +60,46 @@ export function waitForClients<TClient extends WebSocketLike, TServer extends Se
             const socket = Array.isArray(args) ? args[0] : args;
             const id = await firstValueFrom(
                 fromEvent<MessageEvent>(socket, 'message').pipe(
-                    map(getAuthToken),
-                    first(isNonEmptyString),
+                    scan(
+                        (negotiation, event) => {
+                            if (negotiation.state === SocketNegotiationState.Unauth) {
+                                const id = getAuthToken(event);
+                                if (id === null) throw new Error('Expected command to be Authorization');
+                                return { id, state: SocketNegotiationState.AuthAndNotReady };
+                            }
+
+                            if (negotiation.state === SocketNegotiationState.AuthAndNotReady) {
+                                if (event.data !== ReadyForFrames)
+                                    throw new Error('Expected command to be ReadyForFrames');
+                                return { id: negotiation.id, state: SocketNegotiationState.AuthAndReady };
+                            }
+
+                            throw new Error('no more commands expected after socket has been authorized and ready');
+                        },
+                        { id: null, state: SocketNegotiationState.Unauth } as SocketNegotiation,
+                    ),
+                    tap(
+                        x => x.state === SocketNegotiationState.AuthAndNotReady && socket.send(AuthorizationSuccessful), // TODO: make sure it's sent only once
+                    ),
+                    first(x => x.state === SocketNegotiationState.AuthAndReady),
+                    map(x => x.id!),
                     timeout(authTimeout),
                     map(getClientIdByToken),
                 ),
             );
-
             return { socket, id };
         }),
-        tap(socketAndId => socketAndId.socket.send(AuthorizationSuccessful)),
         scan((acc, socketAndId) => acc.concat(socketAndId), [] as SocketAndId<TClient>[]),
         first(socketsAndIds => socketsAndIds.length === expectedClientCount),
         timeout(waitForClientsTimeout),
     );
 }
 
-export async function connectToServer(
-    socket: HasEventTargetAddRemove<any> & { isOpen(): boolean; send: (data: string) => void },
+export async function connectToServer<TCommand, TFrame>(
+    socket: WebSocketLike,
     authToken: string,
-    onMessage: (message: MessageEvent) => void,
-): Promise<() => void> {
-    await firstValueFrom(
+): Promise<SimpleClient<TCommand, TFrame>> {
+    return await firstValueFrom(
         (socket.isOpen() ? from([true]) : fromEvent(socket, 'open')).pipe(
             timeoutWith(1000, throwError(new Error('Timed out waiting for socket to open'))),
             tap<WebSocket>(() => socket.send(AuthorizationPrefix + authToken)),
@@ -81,15 +114,28 @@ export async function connectToServer(
                             );
                         }
                     }),
-                    tap(() => socket.addEventListener('message', onMessage)),
+                    map(
+                        (): SimpleClient<TCommand, TFrame> => {
+                            let isReady = false;
+                            return {
+                                ready: () => {
+                                    isReady = true;
+                                    socket.send(ReadyForFrames);
+                                },
+                                frames: fromEvent(socket, 'message').pipe(
+                                    map((event: MessageEvent) => {
+                                        return JSON.parse(event.data as string) as TFrame;
+                                    }),
+                                ),
+                                sendCommand: (command: TCommand) => {
+                                    if (!isReady) throw new Error('Must call ready before sending commands');
+                                    socket.send(JSON.stringify(command));
+                                },
+                            };
+                        },
+                    ),
                 ),
             ),
         ),
     );
-
-    return () => socket.removeEventListener('message', onMessage);
 }
-
-//type MessageReducer<TIn, TOut> = (input: TIn) => TOut;
-
-//function connectReducer<TIn, TOut>(reducer: MessageReducer<TIn, TOut>) {}
