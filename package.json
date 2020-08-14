@@ -19,14 +19,14 @@
         "nodemon": "^2.0.2",
         "npm-run-all": "^4.1.5",
         "prettier": "^2.0.5",
+        "rxjs": "7.0.0-beta.4",
         "ts-loader": "^6.2.0",
         "typescript": "^3.9.7",
         "webpack": "^4.41.1",
         "webpack-cli": "^3.3.9",
         "webpack-dev-server": "^3.8.2",
         "worker-loader": "^2.0.0",
-        "worker-plugin": "^3.2.0",
-        "rxjs": "7.0.0-beta.4"
+        "worker-plugin": "^3.2.0"
     },
     "dependencies": {
         "client": "file:packages/client",
@@ -34,7 +34,10 @@
     },
     "workspaces": [
         "packages/client",
-        "packages/server"
+        "packages/server",
+        "packages/comms-shared",
+        "packages/comms-client",
+        "packages/comms-server"
     ],
     "lint-staged": {
         "*.{ts,tsx,json}": [
@@ -46,5 +49,10 @@
         "hooks": {
             "pre-commit": "lint-staged"
         }
-    }
+    },
+    "version": "1.0.0",
+    "main": "index.js",
+    "repository": "git@github.com:rgripper/game-5.git",
+    "author": "Vladimir <azuresplash@gmail.com>",
+    "license": "MIT"
 }

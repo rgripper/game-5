@@ -6,7 +6,7 @@
     "scripts": {
         "start": "webpack-dev-server --port 9010",
         "build": "yarn webpack",
-        "predeploy": "npm run build",
+        "predeploy": "yarn build",
         "deploy": "gh-pages -d build"
     },
     "dependencies": {

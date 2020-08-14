@@ -1,0 +1,17 @@
+{
+    "name": "net",
+    "version": "0.0.1",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+        "build": "yarn webpack"
+    },
+    "dependencies": {
+        "rxjs": "7.0.0-beta.4",
+        "ws": "^7.3.1"
+    },
+    "devDependencies": {
+        "@types/node": "^14.0.27",
+        "@types/ws": "^7.2.6"
+    }
+}
